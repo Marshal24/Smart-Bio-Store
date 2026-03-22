@@ -1,0 +1,914 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { Lock, LogOut, Plus, Trash2, Image as ImageIcon, Save, CheckCircle2, AlertCircle, Percent, Edit3, Settings, X, UploadCloud } from "lucide-react";
+
+const ACCESS_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
+const SIZES = ["S", "M", "L", "XL", "XXL"]; // Still used for some global defaults
+const SIZE_TEMPLATES = {
+  ALPHA: { name: "ملابس (S, M, L...)", values: ["S", "M", "L", "XL", "XXL", "XXXL"] },
+  PANTS: { name: "سراويل (28, 30, 32...)", values: ["28", "29", "30", "31", "32", "33", "34", "36", "38", "40"] },
+  SHOES: { name: "أحذية (37, 38, 39...)", values: ["37", "38", "39", "40", "41", "42", "43", "44", "45"] },
+  KIDS: { name: "أطفال (1, 2, 3...)", values: ["1", "2", "3", "4", "5", "6"] }
+};
+
+export default function AdminDashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
+  const [activeTab, setActiveTab] = useState("products"); // products, promos, settings
+
+  // Toast Notification System
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+  };
+
+  // Sub-systems State
+  const [products, setProducts] = useState([]);
+  const [promoCodes, setPromoCodes] = useState([]);
+  const [settings, setSettings] = useState({
+    whatsapp_number: "",
+    bundle_amount: "",
+    bundle_threshold: "",
+    categories: ["فساتين", "بدلات", "قمصان", "اكسسوارات"],
+    store_name: "Boutique",
+    store_bio: "",
+    store_cover: "",
+    primary_color: "#000000",
+    store_logo: ""
+  });
+
+  const [logoFile, setLogoFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+
+  const [loading, setLoading] = useState(false);
+
+  // New Category Input
+  const [newCatInput, setNewCatInput] = useState("");
+
+  // Product Modal State
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
+  const [productForm, setProductForm] = useState({
+    name: "",
+    price: "",
+    category: "",
+    sizes: { S: true, M: true, L: true, XL: true, XXL: true },
+    existingMainImage: ""
+  });
+  const [mainImageFile, setMainImageFile] = useState(null);
+
+  // Color Variants: [{ name: '', file: null, existingUrl: '' }]
+  const [colorVariants, setColorVariants] = useState([]);
+
+  // Promos State
+  const [newPromo, setNewPromo] = useState({ code: "", discount_value: "", is_active: true, expires_at: "" });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProducts();
+      fetchPromoCodes();
+      fetchSettings();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === ACCESS_PASSWORD) {
+      setIsAuthenticated(true);
+      showToast("تم تسجيل الدخول بنجاح");
+    } else {
+      showToast("كلمة المرور غير صحيحة", "error");
+    }
+  };
+
+  // --- Fetchers ---
+  const fetchSettings = async () => {
+    const { data } = await supabase.from("store_settings").select("*").eq("id", 1).single();
+    if (data) {
+      setSettings({
+        ...data,
+        categories: data.categories || ["فساتين", "بدلات", "قمصان", "اكسسوارات"],
+        store_name: data.store_name || "Boutique",
+        store_bio: data.store_bio || "",
+        store_cover: data.store_cover || "",
+        primary_color: data.primary_color || "#000000",
+        store_logo: data.store_logo || ""
+      });
+    }
+  };
+
+  const fetchProducts = async () => {
+    const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+    if (data) setProducts(data);
+  };
+
+  const fetchPromoCodes = async () => {
+    const { data, error } = await supabase.from("promo_codes").select("*").order("created_at", { ascending: false });
+    if (error) {
+      console.error("Fetch promos error:", error);
+      showToast(`خطأ جلب الخصومات: ${error.message}`, "error");
+    }
+    if (data) setPromoCodes(data);
+  };
+
+  // --- Settings Logic ---
+  const saveSettings = async () => {
+    setLoading(true);
+    let finalLogo = settings.store_logo;
+    let finalCover = settings.store_cover;
+
+    try {
+      if (logoFile) finalLogo = await uploadFileToSupabase(logoFile);
+      if (coverFile) finalCover = await uploadFileToSupabase(coverFile);
+
+      const { error } = await supabase.from("store_settings").upsert({
+        id: 1,
+        whatsapp_number: settings.whatsapp_number,
+        bundle_amount: Number(settings.bundle_amount),
+        bundle_threshold: Number(settings.bundle_threshold),
+        categories: settings.categories,
+        store_name: settings.store_name || "Boutique",
+        store_bio: settings.store_bio || "",
+        store_cover: finalCover || "",
+        primary_color: settings.primary_color || "#000000",
+        store_logo: finalLogo || ""
+      });
+
+      if (error) throw error;
+      showToast("تم حفظ الإعدادات بنجاح");
+      setSettings(prev => ({ ...prev, store_logo: finalLogo, store_cover: finalCover }));
+      setLogoFile(null);
+      setCoverFile(null);
+    } catch (err) {
+      console.error("Save settings error: ", err);
+      showToast(`خطأ قاعدة البيانات: ${err.message || "Unknown"}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addCategory = () => {
+    if (!newCatInput.trim()) return;
+    if (settings.categories.includes(newCatInput.trim())) return;
+    setSettings(prev => ({ ...prev, categories: [...prev.categories, newCatInput.trim()] }));
+    setNewCatInput("");
+  };
+
+  const removeCategory = (cat) => {
+    setSettings(prev => ({ ...prev, categories: prev.categories.filter(c => c !== cat) }));
+  };
+
+  // --- Product Modals & UI ---
+  const openAddProduct = () => {
+    setEditingId(null);
+    setProductForm({
+      name: "", price: "", category: settings.categories[0] || "",
+      size_type: "ALPHA", // New: default to alpha sizes
+      sizes: { S: true, M: true, L: true, XL: true, XXL: true },
+      existingMainImage: ""
+    });
+    setMainImageFile(null);
+    setColorVariants([]); // Will be initialized with rows containing sizes
+    setIsProductModalOpen(true);
+  };
+
+  const openEditProduct = (product) => {
+    setEditingId(product.id);
+    const sizesObj = product.variants?.sizes || product.variants || { S: true, M: true, L: true, XL: true, XXL: true };
+    const colorsArr = product.variants?.colors || [];
+
+    setProductForm({
+      name: product.name,
+      price: product.price,
+      category: product.category,
+      size_type: product.variants?.size_type || "ALPHA", // Fetch existing type
+      sizes: sizesObj,
+      existingMainImage: product.image_url
+    });
+    setMainImageFile(null);
+
+    // Map existing colors with their specific sizes
+    setColorVariants(colorsArr.map(c => ({
+      name: c.name || (typeof c === 'string' ? c : ""),
+      file: null,
+      existingUrl: c.image_url || "",
+      sizes: c.sizes || { ...sizesObj } // Fallback to global sizes if per-color missing
+    })));
+
+    setIsProductModalOpen(true);
+  };
+
+  const addColorRow = () => {
+    setColorVariants([...colorVariants, {
+      name: "",
+      file: null,
+      existingUrl: "",
+      sizes: { ...productForm.sizes } // Default to currently selected global sizes
+    }]);
+  };
+
+  const removeColorRow = (index) => {
+    const newArr = [...colorVariants];
+    newArr.splice(index, 1);
+    setColorVariants(newArr);
+  };
+
+  const handleColorImageUpload = (index, file) => {
+    const newArr = [...colorVariants];
+    newArr[index].file = file;
+    setColorVariants(newArr);
+  };
+
+  const uploadFileToSupabase = async (file) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}-${Date.now()}.${fileExt}`;
+    const { error } = await supabase.storage.from('products').upload(fileName, file);
+    if (error) throw error;
+    const { data } = supabase.storage.from('products').getPublicUrl(fileName);
+    return data.publicUrl;
+  };
+
+  const saveProduct = async (e) => {
+    e.preventDefault();
+    if (Number(productForm.price) < 0) {
+      showToast("السعر لا يمكن أن يكون سالباً", "error");
+      return;
+    }
+    if (!productForm.category) {
+      showToast("الرجاء تحديد تصنيف", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let finalMainImage = productForm.existingMainImage;
+      if (mainImageFile) {
+        finalMainImage = await uploadFileToSupabase(mainImageFile);
+      }
+
+      // Process Color Images & Sizes
+      const finalColors = [];
+      for (const cv of colorVariants) {
+        if (!cv.name.trim()) continue; // Skip empty names
+        let colorUrl = cv.existingUrl;
+        if (cv.file) {
+          colorUrl = await uploadFileToSupabase(cv.file);
+        }
+        finalColors.push({
+          name: cv.name.trim(),
+          image_url: colorUrl,
+          sizes: cv.sizes // Save per-color size mapping
+        });
+      }
+
+      const variantsPayload = {
+        size_type: productForm.size_type, // Persist the size system used
+        sizes: productForm.sizes, // Keep global manifest for backward compatibility
+        colors: finalColors
+      };
+
+      const payload = {
+        name: productForm.name,
+        price: Number(productForm.price),
+        category: productForm.category,
+        image_url: finalMainImage,
+        variants: variantsPayload
+      };
+
+      if (editingId) {
+        const { error } = await supabase.from("products").update(payload).eq("id", editingId);
+        if (error) throw error;
+        showToast("تم تحديث المنتج بنجاح");
+      } else {
+        const { error } = await supabase.from("products").insert([payload]);
+        if (error) throw error;
+        showToast("تم إضافة المنتج بنجاح");
+      }
+
+      setIsProductModalOpen(false);
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      showToast("حدث خطأ أثناء حفظ المنتج", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteProduct = async (product) => {
+    if (!confirm("هل أنت متأكد من الحذف النهائي؟ لا يمكن التراجع!")) return;
+
+    try {
+      const filesToDelete = [];
+      if (product.image_url) {
+        filesToDelete.push(product.image_url.split('/').pop());
+      }
+      const existingColors = product.variants?.colors || [];
+      existingColors.forEach(c => {
+        if (c.image_url) filesToDelete.push(c.image_url.split('/').pop());
+      });
+
+      if (filesToDelete.length > 0) {
+        const cleanFiles = filesToDelete.filter(Boolean);
+        await supabase.storage.from("products").remove(cleanFiles);
+      }
+
+      const { error } = await supabase.from("products").delete().eq("id", product.id);
+      if (error) throw error;
+
+      fetchProducts();
+      showToast("تم حذف المنتج مع صوره بنجاح");
+    } catch (error) {
+      console.error(error);
+      showToast("حدث خطأ أثناء الحذف", "error");
+    }
+  };
+
+  const toggleVariantFast = async (product, size) => {
+    const currentSizes = product.variants?.sizes || product.variants || {};
+    const updatedSizes = { ...currentSizes, [size]: !currentSizes[size] };
+    const updatedVariants = { ...product.variants, sizes: updatedSizes };
+
+    const { error } = await supabase.from("products").update({ variants: updatedVariants }).eq("id", product.id);
+    if (!error) {
+      setProducts(products.map(p => p.id === product.id ? { ...p, variants: updatedVariants } : p));
+      showToast(`تم تحديث توفر المقاس ${size} للمنتج`, "success");
+    }
+  };
+
+  const addPromoCode = async (e) => {
+    e.preventDefault();
+    if (Number(newPromo.discount_value) < 0) {
+      showToast("قيمة الخصم لا يمكن أن تكون بالسالب", "error");
+      return;
+    }
+    const promoData = {
+      code: newPromo.code.trim().toUpperCase(),
+      discount_value: Number(newPromo.discount_value),
+      is_active: newPromo.is_active,
+      expires_at: newPromo.expires_at ? new Date(newPromo.expires_at).toISOString() : null
+    };
+
+    const { error } = await supabase.from("promo_codes").insert([promoData]);
+
+    if (!error) {
+      setNewPromo({ code: "", discount_value: "", is_active: true, expires_at: "" });
+      fetchPromoCodes();
+      showToast("تم إنشاء كود الخصم بنجاح");
+    } else {
+      console.error("Promo code error: ", error);
+      showToast(`خطأ قاعدة البيانات: ${error.message || "Unknown"}`, "error");
+    }
+  };
+
+  const togglePromoStatus = async (promo) => {
+    const { error } = await supabase.from("promo_codes").update({ is_active: !promo.is_active }).eq("id", promo.id);
+    if (!error) fetchPromoCodes();
+  };
+
+  const deletePromoCode = async (id) => {
+    if (!confirm("هل تريد حذف هذا الكود؟")) return;
+    const { error } = await supabase.from("promo_codes").delete().eq("id", id);
+    if (!error) {
+      fetchPromoCodes();
+      showToast("تم حذف الكود بنجاح");
+    }
+  };
+
+  // --- Render Functions ---
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative">
+        {toast.show && (
+          <div className={`absolute top-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-lg flex items-center gap-2 text-white font-medium animate-in slide-in-from-top-4 fade-in z-50 ${toast.type === "error" ? "bg-red-500" : "bg-black"}`}>
+            {toast.type === "error" ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+            {toast.message}
+          </div>
+        )}
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm border border-gray-100">
+          <div className="flex justify-center mb-6">
+            <div className="bg-black text-white p-4 rounded-2xl shadow-lg">
+              <Lock className="w-8 h-8" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-black text-center mb-8 tracking-tight">إدارة المتجر الذكي</h1>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="كلمة مرور الإدارة السريّة"
+            className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none mb-6 text-center font-medium bg-gray-50 focus:bg-white transition"
+          />
+          <button type="submit" className="w-full bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-900 transition active:scale-95">
+            تسجيل الدخول
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-32 relative">
+      {/* Toast Notification Layer */}
+      {toast.show && (
+        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-white font-bold animate-in slide-in-from-bottom-8 fade-in z-[100] ${toast.type === "error" ? "bg-red-500" : "bg-black"}`}>
+          {toast.type === "error" ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+          {toast.message}
+        </div>
+      )}
+
+      {/* Product Form Modal */}
+      {isProductModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl animate-in slide-in-from-bottom-10 max-h-[95vh] flex flex-col my-auto">
+            <div className="flex justify-between items-center p-6 border-b shrink-0">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                {editingId ? <><Edit3 className="w-5 h-5" /> تعديل المنتج</> : <><Plus className="w-5 h-5" /> أضف منتج جديد</>}
+              </h2>
+              <button disabled={loading} onClick={() => setIsProductModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+              <form id="productForm" onSubmit={saveProduct} className="space-y-6">
+
+                {/* Basic Details */}
+                <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 flex gap-6 flex-col sm:flex-row shadow-sm">
+                  {/* Main Image */}
+                  <div className="shrink-0 w-full sm:w-32">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">الصورة الرئيسية</label>
+                    <label className="relative flex flex-col items-center justify-center w-full aspect-[3/4] sm:aspect-square bg-white border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-black transition overflow-hidden">
+                      {mainImageFile ? (
+                        <div className="absolute inset-0 p-2 break-all text-xs font-medium text-center flex items-center justify-center bg-gray-100">{mainImageFile.name}</div>
+                      ) : productForm.existingMainImage ? (
+                        <img src={productForm.existingMainImage} className="w-full h-full object-cover" alt="Preview" />
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <UploadCloud className="w-6 h-6 text-gray-400 mb-1" />
+                          <span className="text-[10px] text-gray-400 font-bold">رفع صورة</span>
+                        </div>
+                      )}
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => setMainImageFile(e.target.files[0])} />
+                    </label>
+                  </div>
+
+                  {/* Inputs */}
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">اسم المنتج</label>
+                      <input required type="text" value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black outline-none bg-white font-medium shadow-sm transition-colors" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">السعر (د.ع)</label>
+                        <input required type="number" min="0" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black outline-none bg-white font-medium shadow-sm transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">القسم</label>
+                        <select required value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black outline-none bg-white font-medium appearance-none shadow-sm transition-colors">
+                          <option value="">اختر القسم...</option>
+                          {settings.categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">نظام المقاسات</label>
+                        <select required value={productForm.size_type} onChange={e => setProductForm({ ...productForm, size_type: e.target.value })} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black outline-none bg-white font-medium appearance-none shadow-sm transition-colors text-amber-900 border-amber-50">
+                          {Object.entries(SIZE_TEMPLATES).map(([key, obj]) => <option key={key} value={key}>{obj.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Colors with specific images */}
+                <div className="border border-gray-200 rounded-2xl p-5 shadow-sm">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h3 className="font-bold text-gray-900 border-b-2 border-black inline-block pb-1">الألوان وصورها (اختياري)</h3>
+                      <p className="text-xs text-gray-500 mt-1">ارفع صورة مخصصة لكل لون ليراها الزبون فوراً.</p>
+                    </div>
+                    <button type="button" onClick={addColorRow} className="bg-gray-100 text-black hover:bg-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold transition flex items-center gap-1 active:scale-95 shadow-sm">
+                      <Plus className="w-4 h-4" /> إضافة لون
+                    </button>
+                  </div>
+
+                  {colorVariants.length === 0 ? (
+                    <div className="text-center py-6 text-sm text-gray-400 border border-dashed rounded-xl bg-gray-50">لا يوجد ألوان مخصصة. سيتم الاعتماد على الصورة الرئيسية فقط.</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {colorVariants.map((cv, index) => (
+                        <div key={index} className="flex items-center gap-3 bg-white p-3 border border-gray-200 rounded-xl relative group shadow-sm">
+
+                          {/* Color Image Upload */}
+                          <label className="shrink-0 w-12 h-12 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center cursor-pointer overflow-hidden hover:border-black transition">
+                            {cv.file ? (
+                              <span className="text-[8px] font-bold break-all text-center px-1">{cv.file.name}</span>
+                            ) : cv.existingUrl ? (
+                              <img src={cv.existingUrl} className="w-full h-full object-cover" alt="color variant" />
+                            ) : (
+                              <ImageIcon className="w-5 h-5 text-gray-400" />
+                            )}
+                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleColorImageUpload(index, e.target.files[0])} />
+                          </label>
+
+                          <div className="flex-1 space-y-2">
+                            <input type="text" placeholder="اسم/رمز اللون" value={cv.name} onChange={e => {
+                              const newArr = [...colorVariants]; newArr[index].name = e.target.value; setColorVariants(newArr);
+                            }} className="w-full p-2.5 text-sm rounded-lg bg-gray-50 border-none focus:ring-1 focus:ring-black outline-none font-bold" />
+
+                            {/* NEW: Per-color Size Toggles (Dynamic) */}
+                            <div className="flex flex-wrap gap-1">
+                              {SIZE_TEMPLATES[productForm.size_type].values.map(size => {
+                                const isActive = cv.sizes ? cv.sizes[size] !== false : productForm.sizes[size] !== false;
+                                return (
+                                  <button key={size} type="button"
+                                    onClick={() => {
+                                      const newArr = [...colorVariants];
+                                      const currentSizes = newArr[index].sizes || { ...productForm.sizes };
+                                      newArr[index].sizes = { ...currentSizes, [size]: !isActive };
+                                      setColorVariants(newArr);
+                                    }}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-black border transition-all ${isActive ? 'bg-black text-white border-black' : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300'}`}
+                                  >
+                                    {size}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <button type="button" onClick={() => removeColorRow(index)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Legacy Quick Sizes Toggle for Creation/Edit Form */}
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                  <span className="text-sm font-bold text-gray-700">تفعيل/تعطيل المقاسات مبدئياً:</span>
+                  <div className="flex gap-2">
+                    {SIZE_TEMPLATES[productForm.size_type].values.map(size => {
+                      const isActive = productForm.sizes[size] !== false;
+                      return (
+                        <button key={size} type="button"
+                          onClick={() => setProductForm({ ...productForm, sizes: { ...productForm.sizes, [size]: !isActive } })}
+                          className={`w-9 h-9 rounded-lg font-bold text-sm transition-all focus:scale-95 ${isActive ? 'bg-black text-white shadow-md' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </form>
+            </div>
+
+            <div className="p-6 border-t shrink-0 bg-gray-50 rounded-b-3xl flex gap-3">
+              <button disabled={loading} type="button" onClick={() => setIsProductModalOpen(false)} className="px-6 py-4 rounded-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition shadow-sm active:scale-95">إلغاء</button>
+              <button disabled={loading} type="submit" form="productForm" className="flex-1 bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-900 transition flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-black/20">
+                {loading ? "جاري المعالجة..." : editingId ? <><Save className="w-5 h-5" /> حفظ التعديلات</> : <><Plus className="w-5 h-5" /> نشر المنتج</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navbar Minimalist */}
+      <nav className="bg-white border-b sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-black text-white flex items-center justify-center rounded-xl shadow-lg shadow-black/20">
+              <Settings className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="font-black text-xl tracking-tight leading-tight">غرفة التحكم القيادية</h1>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">CMS System v2.0</p>
+            </div>
+          </div>
+          <button onClick={() => setIsAuthenticated(false)} className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl text-black transition flex items-center gap-2 text-sm font-bold shadow-inner active:scale-95">
+            الخروج <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 py-10">
+        {/* Modern Pills Tabs */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-10 bg-white p-2 w-full sm:w-fit rounded-2xl shadow-sm border border-gray-100 pointer-events-auto">
+          <button onClick={() => setActiveTab("products")} className={`flex-1 px-6 sm:px-8 py-3 sm:py-3 py-3 rounded-xl font-bold transition-all ${activeTab === 'products' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+            إدارة المنتجات
+          </button>
+          <button onClick={() => setActiveTab("promos")} className={`flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'promos' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+            العروض والخصومات
+          </button>
+          <button onClick={() => setActiveTab("settings")} className={`flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+            إعدادات المتجر المتطورة
+          </button>
+        </div>
+
+        {/* --- TAB: PRODUCTS --- */}
+        {activeTab === "products" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4">
+            <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-black flex items-center gap-3">
+                المخزون <span className="text-sm bg-gray-100 text-black px-3 py-1 rounded-full font-bold">{products.length} منتج</span>
+              </h2>
+              <button onClick={openAddProduct} className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg shadow-black/20 flex items-center gap-2 active:scale-95">
+                <Plus className="w-5 h-5" /> أضف منتج
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {products.map(product => {
+                const sizesObj = product.variants?.sizes || product.variants || {};
+                const colorsArr = product.variants?.colors || [];
+
+                return (
+                  <div key={product.id} className="bg-white p-5 rounded-3xl shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-300 group flex flex-col">
+                    <div className="flex gap-4 mb-4">
+                      <div className="w-24 h-32 bg-gray-50 rounded-2xl overflow-hidden shrink-0 border border-gray-100 relative">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 font-medium">بدون صور</div>
+                        )}
+                        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur text-[10px] font-black px-2 py-1 rounded-md shadow-sm">
+                          {product.category}
+                        </div>
+                      </div>
+                      <div className="flex-1 py-1">
+                        <h3 className="font-black text-lg leading-tight mb-2 text-gray-900 group-hover:text-amber-700 transition-colors">{product.name}</h3>
+                        <p className="text-black font-black bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 inline-block text-sm shadow-sm">{Number(product.price).toLocaleString()} د.ع</p>
+
+                        {colorsArr.length > 0 && (
+                          <div className="mt-3 flex gap-1 flex-wrap">
+                            {colorsArr.map((color, i) => (
+                              <span key={i} className="text-[10px] bg-white border border-gray-200 shadow-sm text-gray-700 px-2 py-1 rounded-md font-bold flex items-center gap-1">
+                                {color.image_url && <span className="w-2 h-2 rounded-full bg-green-400/20"><ImageIcon className="w-2 h-2 text-green-600" /></span>}
+                                {color.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-auto border-t border-gray-100 pt-4 pb-2">
+                      <p className="text-[11px] uppercase tracking-wider text-gray-400 font-bold mb-2">إمداد المقاسات السريع:</p>
+                      <div className="flex gap-1.5 mb-4">
+                        {SIZES.map(size => {
+                          const isAvailable = sizesObj[size] !== false;
+                          return (
+                            <button
+                              key={size}
+                              onClick={() => toggleVariantFast(product, size)}
+                              className={`w-9 h-9 rounded-lg font-bold text-xs transition-all ${isAvailable ? 'bg-black text-white shadow-md hover:bg-gray-800' : 'bg-gray-50 text-gray-300 border border-gray-200 hover:bg-gray-100'}`}
+                            >
+                              {size}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 border-t border-gray-100 pt-4">
+                      <button onClick={() => openEditProduct(product)} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-black py-2.5 rounded-xl text-sm font-bold transition flex justify-center items-center gap-2 active:scale-95 shadow-sm">
+                        <Edit3 className="w-4 h-4" /> تعديل المنتج
+                      </button>
+                      <button onClick={() => deleteProduct(product)} className="w-[52px] shrink-0 bg-white hover:bg-red-500 hover:border-red-500 hover:text-white text-red-500 border border-red-100 transition shadow-sm rounded-xl flex items-center justify-center active:scale-95">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {products.length === 0 && (
+              <div className="text-center py-32 bg-white rounded-3xl border border-dashed border-gray-300 shadow-sm mt-8">
+                <div className="inline-block p-5 bg-gray-50 rounded-full mb-6">
+                  <ImageIcon className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="font-black text-2xl text-gray-900 mb-2">المخزون فارغ تماماً</h3>
+                <p className="text-gray-500 font-medium">ابدأ الآن ببناء إمبراطوريتك وأضف أول مجموعة أزياء.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- TAB: PROMOS --- */}
+        {activeTab === "promos" && (
+          <div className="grid lg:grid-cols-12 gap-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4">
+            <div className="lg:col-span-5">
+              <form onSubmit={addPromoCode} className="bg-white p-8 rounded-3xl shadow-xl shadow-black/5 border border-gray-100 sticky top-28">
+                <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center mb-6 shadow-md"><Percent className="w-6 h-6" /></div>
+                <h2 className="text-xl font-black mb-6">إصدار كود جديد</h2>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">كلمة المرور الترويجية</label>
+                      <input required type="text" value={newPromo.code} onChange={e => setNewPromo({ ...newPromo, code: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none uppercase font-mono bg-gray-50 focus:bg-white transition shadow-inner" placeholder="أدخل الكود" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">قيمة الخصم (د.ع)</label>
+                      <input required min="0" type="number" value={newPromo.discount_value} onChange={e => setNewPromo({ ...newPromo, discount_value: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition shadow-inner" placeholder="قيمة الخصم" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2 flex justify-between">
+                      تاريخ ووقت انتهاء الصلاحية <span className="text-gray-400 text-xs">(اختياري - يترك فارغاً للخصم الدائم)</span>
+                    </label>
+                    <input type="datetime-local" value={newPromo.expires_at} onChange={e => setNewPromo({ ...newPromo, expires_at: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition shadow-inner" />
+                  </div>
+                  <button type="submit" className="w-full bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition mt-2 shadow-lg shadow-black/20 active:scale-95">إطلاق الكود للجمهور</button>
+                </div>
+              </form>
+            </div>
+
+            <div className="lg:col-span-7 space-y-4">
+              <h2 className="text-xl font-black mb-6 flex items-center gap-2">الأكواد الفعّالة والسابقة <span className="text-sm bg-black text-white px-2 py-0.5 rounded-md">{promoCodes.length}</span></h2>
+              {promoCodes.map(promo => {
+                const isExpired = promo.expires_at && new Date(promo.expires_at) < new Date();
+                const statusBadge = isExpired ?
+                  <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">⏳ منتهي العرض</span> :
+                  (!promo.is_active ?
+                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">❌ متوقف يدوياً</span> :
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">✅ فعّال حالياً</span>
+                  );
+
+                return (
+                  <div key={promo.id} className={`p-6 rounded-3xl border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between transition-all hover:shadow-lg ${promo.is_active && !isExpired ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100 opacity-80'}`}>
+                    <div className="flex gap-4 items-center w-full sm:w-auto">
+                      <div className="w-14 h-14 bg-gray-100 rounded-2xl flex border border-dashed border-gray-300 items-center justify-center text-gray-400 shrink-0">
+                        <Percent className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h4 className="font-black font-mono text-2xl tracking-wider text-black">{promo.code}</h4>
+                          {statusBadge}
+                        </div>
+                        <p className="text-gray-500 text-sm mt-1 font-medium flex flex-wrap items-center gap-2">
+                          <span>الخصم المطبق: <span className="text-green-600 bg-green-50 px-1 rounded font-bold">{promo.discount_value.toLocaleString()} د.ع</span></span>
+                          {promo.expires_at && <span className="text-[11px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded border border-orange-100">صالح لغاية: {new Date(promo.expires_at).toLocaleString('ar-IQ', { dateStyle: 'short', timeStyle: 'short', hour12: true })}</span>}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex w-full sm:w-auto mt-2 sm:mt-0 items-center gap-2">
+                      <button
+                        onClick={() => togglePromoStatus(promo)}
+                        className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95 ${promo.is_active ? 'bg-black text-white hover:bg-gray-800' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        {promo.is_active ? 'إيقاف التفعيل فوراً' : 'تنشيط الكود'}
+                      </button>
+                      <button onClick={() => deletePromoCode(promo.id)} className="p-3 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition border border-transparent hover:border-red-100">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {promoCodes.length === 0 && (
+                <div className="text-center py-20 text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 shadow-sm">
+                  لوحة الخصومات تنتظر أول حملة تسويقية!
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* --- TAB: SETTINGS --- */}
+        {activeTab === "settings" && (
+          <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4">
+            <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-black/5 border border-gray-100 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-bl-full -z-0"></div>
+              <div className="relative z-10">
+                <h2 className="text-2xl font-black mb-8 flex items-center gap-3"><Settings className="w-7 h-7" /> إعدادات محرك المتجر (CMS)</h2>
+
+                <div className="space-y-8">
+                  {/* Brand Identity */}
+                  <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl shadow-sm">
+                    <h3 className="text-lg font-bold text-black mb-1">هوية المتجر (العلامة البيضاء)</h3>
+                    <p className="text-sm text-gray-500 mb-6 font-medium">خصّص اسم متجرك وألوانه وشعاره ليظهر بشكل فريد لزبائنك</p>
+
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">اسم المتجر (البراند)</label>
+                          <input type="text" value={settings.store_name} onChange={e => setSettings({ ...settings, store_name: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none transition" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">وصف قصير (Bio)</label>
+                          <input type="text" placeholder="مثال: أرقى وأفضل التصاميم..." value={settings.store_bio} onChange={e => setSettings({ ...settings, store_bio: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none transition" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">اللون الأساسي (Primary Color)</label>
+                          <div className="flex items-center gap-3">
+                            <input type="color" value={settings.primary_color} onChange={e => setSettings({ ...settings, primary_color: e.target.value })} className="h-14 w-14 rounded-xl cursor-pointer border-0 p-0" />
+                            <span className="text-sm font-mono bg-white px-4 py-3 rounded-xl border font-bold text-gray-600 shadow-sm">{settings.primary_color}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">صورة الشعار (Logo)</label>
+                          <input type="file" accept="image/*" onChange={e => setLogoFile(e.target.files[0])} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black text-sm bg-white" />
+                          {(logoFile || settings.store_logo) && (
+                            <img src={logoFile ? URL.createObjectURL(logoFile) : settings.store_logo} className="h-16 mt-3 object-contain rounded-lg border p-1" />
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">صورة الغلاف الكبيرة (Cover)</label>
+                          <input type="file" accept="image/*" onChange={e => setCoverFile(e.target.files[0])} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black text-sm bg-white" />
+                          {(coverFile || settings.store_cover) && (
+                            <img src={coverFile ? URL.createObjectURL(coverFile) : settings.store_cover} className="h-16 w-full mt-3 object-cover rounded-lg border" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Number */}
+                  <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl shadow-sm">
+                    <h3 className="text-lg font-bold text-black mb-1">رقم الواتساب الرئيسي</h3>
+                    <p className="text-sm text-gray-500 mb-4 font-medium">الرقم الذي سيتم توجيه جميع الطلبات المباشرة إليه. (مع مفتاح الدولة، مثال: 96477...)</p>
+                    <div className="flex border border-gray-300 rounded-xl bg-white overflow-hidden shadow-inner focus-within:border-black transition">
+                      <input
+                        type="text"
+                        value={settings.whatsapp_number ?? ""}
+                        onChange={e => setSettings({ ...settings, whatsapp_number: e.target.value.replace(/[^0-9]/g, "") })}
+                        className="flex-1 p-4 outline-none font-mono text-lg tracking-widest text-center"
+                        placeholder=""
+                      />
+                    </div>
+                  </div>
+
+                  {/* Marketing / Bundle Rule */}
+                  <div className="p-6 bg-gradient-to-br from-gray-900 to-black rounded-2xl shadow-xl text-white">
+                    <h3 className="text-lg font-black mb-1 flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-400" /> نظام الخصم الذكي التلقائي</h3>
+                    <p className="text-sm text-gray-400 mb-6 font-medium">حدد الشروط ليتم خصم المبلغ من الفاتورة النهائية بمجرد أن تتجاوز سلة الزبون العدد المطلوب.</p>
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">قيمة الخصم الثابت (د.ع)</label>
+                        <input type="number" min="0" value={settings.bundle_amount ?? ""} onChange={e => setSettings({ ...settings, bundle_amount: e.target.value })} className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-500 outline-none focus:bg-white/20 font-bold transition" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">كم قطعة مطلوبة لتفعيل الخصم؟</label>
+                        <div className="flex items-center gap-3 bg-white/10 p-2 rounded-xl border border-white/20">
+                          <input type="number" min="2" value={settings.bundle_threshold ?? ""} onChange={e => setSettings({ ...settings, bundle_threshold: e.target.value })} className="w-16 p-2 rounded-lg bg-white/20 text-white outline-none text-center font-bold" />
+                          <span className="font-bold">قطع أو أكثر</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Categories Management */}
+                  <div className="p-6 border border-gray-200 rounded-2xl shadow-sm">
+                    <h3 className="text-lg font-bold text-black mb-1">إدارة الأقسام (التصنيفات)</h3>
+                    <p className="text-sm text-gray-500 mb-6 font-medium">أضف واحذف الأقسام التي تظهر كفلاتر للزبون وعند إضافة منتج جديد.</p>
+
+                    <div className="flex flex-wrap gap-2 mb-6 min-h-[50px]">
+                      {settings.categories.map(cat => (
+                        <span key={cat} className="bg-gray-100 border border-gray-200 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 group cursor-default shadow-sm">
+                          {cat}
+                          <button onClick={() => removeCategory(cat)} className="w-5 h-5 bg-white text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full flex items-center justify-center transition shadow-sm border border-gray-200">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        className="flex-1 border border-gray-300 p-3.5 rounded-xl bg-gray-50 focus:bg-white outline-none focus:border-black font-medium transition-colors"
+                        placeholder="اسم القسم"
+                        value={newCatInput}
+                        onChange={e => setNewCatInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addCategory()}
+                      />
+                      <button onClick={addCategory} className="bg-black text-white px-6 rounded-xl font-bold hover:bg-gray-800 transition shadow-md active:scale-95">إضافة</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 border-t pt-8 flex">
+                  <button onClick={saveSettings} disabled={loading} className="w-full bg-[#20bd5a] hover:bg-[#1da24d] text-white py-5 rounded-2xl font-black text-lg transition flex items-center justify-center gap-2 shadow-xl shadow-green-500/30 active:scale-[0.98]">
+                    {loading ? "جاري الحفظ..." : <><Save className="w-6 h-6" /> تأكيد وتحديث نظام المتجر بالكامل</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
