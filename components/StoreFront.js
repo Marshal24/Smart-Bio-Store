@@ -122,13 +122,32 @@ export default function StoreFront() {
 
   const openProductModal = (product) => {
     setSelectedProduct(product);
-    setSelectedSize("");
     
+    // Auto-select first available SIZE
+    const sizeType = product.variants?.size_type || 'ALPHA';
+    const template = SIZE_TEMPLATES[sizeType] || SIZE_TEMPLATES.ALPHA;
+    const productSizes = product.variants?.sizes || product.variants || {};
+    
+    const firstAvailableSize = template.find(size => productSizes[size] !== false);
+    setSelectedSize(firstAvailableSize || "");
+    
+    // Auto-select first COLOR
     const colors = product.variants?.colors || [];
     if (colors.length > 0) {
       const firstColor = colors[0];
       setSelectedColor(firstColor);
-      setActiveModalImage(typeof firstColor === "string" ? product.image_url : (firstColor.image_url || product.image_url));
+      
+      const isLegacy = typeof firstColor === "string";
+      const imageUrl = isLegacy ? null : firstColor.image_url;
+      setActiveModalImage(imageUrl || product.image_url);
+
+      // If we auto-selected a color, and it has its own size rules, re-check size
+      if (firstAvailableSize && firstColor && typeof firstColor !== "string" && firstColor.sizes) {
+         if (firstColor.sizes[firstAvailableSize] === false) {
+           const specificAvailableSize = template.find(size => firstColor.sizes[size] !== false);
+           setSelectedSize(specificAvailableSize || "");
+         }
+      }
     } else {
       setSelectedColor(null);
       setActiveModalImage(product.image_url);

@@ -423,16 +423,16 @@ export default function AdminDashboard() {
 
       {/* Product Form Modal */}
       {isProductModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl animate-in slide-in-from-bottom-10 max-h-[95vh] flex flex-col my-auto">
-            <div className="flex justify-between items-center p-6 border-b shrink-0">
-              <h2 className="text-xl font-bold flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto pt-10">
+          <div className="bg-white w-full max-w-2xl rounded-t-[32px] sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-10 max-h-[92vh] sm:max-h-[95vh] flex flex-col my-auto border-t sm:border border-white/20">
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b shrink-0 bg-white/50 backdrop-blur-md sticky top-0 z-10">
+              <h2 className="text-lg sm:text-xl font-black flex items-center gap-2">
                 {editingId ? <><Edit3 className="w-5 h-5" /> تعديل المنتج</> : <><Plus className="w-5 h-5" /> أضف منتج جديد</>}
               </h2>
-              <button disabled={loading} onClick={() => setIsProductModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition"><X className="w-5 h-5" /></button>
+              <button disabled={loading} onClick={() => setIsProductModalOpen(false)} className="p-2.5 hover:bg-gray-100 bg-gray-50 rounded-xl transition active:scale-90"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="p-5 sm:p-8 overflow-y-auto flex-1 custom-scrollbar">
               <form id="productForm" onSubmit={saveProduct} className="space-y-6">
 
                 {/* Basic Details */}
@@ -500,24 +500,24 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="space-y-3">
                       {colorVariants.map((cv, index) => (
-                        <div key={index} className="flex items-center gap-3 bg-white p-3 border border-gray-200 rounded-xl relative group shadow-sm">
+                        <div key={index} className="flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-3 border border-gray-200 rounded-xl relative group shadow-sm">
 
                           {/* Color Image Upload */}
-                          <label className="shrink-0 w-12 h-12 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center cursor-pointer overflow-hidden hover:border-black transition">
+                          <label className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center cursor-pointer overflow-hidden hover:border-black transition">
                             {cv.file ? (
-                              <span className="text-[8px] font-bold break-all text-center px-1">{cv.file.name}</span>
+                              <span className="text-[7px] font-bold break-all text-center px-0.5">{cv.file.name}</span>
                             ) : cv.existingUrl ? (
                               <img src={cv.existingUrl} className="w-full h-full object-cover" alt="color variant" />
                             ) : (
-                              <ImageIcon className="w-5 h-5 text-gray-400" />
+                              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                             )}
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleColorImageUpload(index, e.target.files[0])} />
                           </label>
 
-                          <div className="flex-1 space-y-2">
-                            <input type="text" placeholder="اسم/رمز اللون" value={cv.name} onChange={e => {
+                          <div className="flex-1 space-y-1.5 min-w-0">
+                            <input type="text" placeholder="اسم اللون" value={cv.name} onChange={e => {
                               const newArr = [...colorVariants]; newArr[index].name = e.target.value; setColorVariants(newArr);
-                            }} className="w-full p-2.5 text-sm rounded-lg bg-gray-50 border-none focus:ring-1 focus:ring-black outline-none font-bold" />
+                            }} className="w-full p-2 text-xs sm:text-sm rounded-lg bg-gray-50 border-none focus:ring-1 focus:ring-black outline-none font-bold truncate" />
 
                             {/* NEW: Per-color Size Toggles (Dynamic) */}
                             <div className="flex flex-wrap gap-1">
@@ -531,7 +531,7 @@ export default function AdminDashboard() {
                                       newArr[index].sizes = { ...currentSizes, [size]: !isActive };
                                       setColorVariants(newArr);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-black border transition-all ${isActive ? 'bg-black text-white border-black' : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300'}`}
+                                    className={`px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black border transition-all ${isActive ? 'bg-black text-white border-black' : 'bg-white text-gray-200 border-gray-100 hover:border-gray-300'}`}
                                   >
                                     {size}
                                   </button>
@@ -540,7 +540,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
 
-                          <button type="button" onClick={() => removeColorRow(index)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
+                          <button type="button" onClick={() => removeColorRow(index)} className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       ))}
                     </div>
@@ -580,36 +580,36 @@ export default function AdminDashboard() {
 
        {/* Navbar Minimalist */}
       <nav className="bg-white border-b sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-black text-white flex items-center justify-center rounded-xl shadow-lg shadow-black/20">
-              <Settings className="w-5 h-5" />
+        <div className="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 md:gap-3">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-black text-white flex items-center justify-center rounded-xl shadow-lg shadow-black/20">
+              <Settings className="w-4 h-4 md:w-5 md:h-5" />
             </div>
             <div>
-              <h1 className="font-black text-lg md:text-xl tracking-tight leading-tight">غرفة التحكم القيادية</h1>
-              <p className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest">CMS System v2.0</p>
+              <h1 className="font-black text-base md:text-xl tracking-tight leading-tight">مركز التحكم</h1>
+              <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest">Admin Panel v2.0</p>
             </div>
           </div>
           <button
             onClick={() => setIsAuthenticated(false)}
-            className="bg-gray-100 hover:bg-gray-200 px-4 py-2.5 rounded-xl text-black transition flex items-center gap-2 text-sm font-bold shadow-inner active:scale-95"
+            className="bg-gray-50 hover:bg-red-50 px-3 py-2 md:px-4 md:py-2.5 rounded-xl text-black hover:text-red-600 transition flex items-center gap-2 text-xs md:text-sm font-bold active:scale-95"
           >
-            <span className="hidden sm:inline">الخروج</span> <LogOut className="w-4 h-4 text-red-500" />
+            <span className="hidden xs:inline">الخروج</span> <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
         {/* Modern Pills Tabs */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-10 bg-white p-2 w-full sm:w-fit rounded-2xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar">
-          <button onClick={() => setActiveTab("products")} className={`whitespace-nowrap flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'products' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+        <div className="flex flex-nowrap gap-2 mb-10 bg-white p-2 w-full sm:w-fit rounded-2xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar scroll-smooth">
+          <button onClick={() => setActiveTab("products")} className={`whitespace-nowrap flex-1 px-5 sm:px-8 py-3 rounded-xl font-bold transition-all text-xs sm:text-sm ${activeTab === 'products' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
             إدارة المنتجات
           </button>
-          <button onClick={() => setActiveTab("promos")} className={`whitespace-nowrap flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'promos' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+          <button onClick={() => setActiveTab("promos")} className={`whitespace-nowrap flex-1 px-5 sm:px-8 py-3 rounded-xl font-bold transition-all text-xs sm:text-sm ${activeTab === 'promos' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
             العروض والخصومات
           </button>
-          <button onClick={() => setActiveTab("settings")} className={`whitespace-nowrap flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
-            إعدادات المتجر المتطورة
+          <button onClick={() => setActiveTab("settings")} className={`whitespace-nowrap flex-1 px-5 sm:px-8 py-3 rounded-xl font-bold transition-all text-xs sm:text-sm ${activeTab === 'settings' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+            إعدادات المتجر
           </button>
         </div>
 
