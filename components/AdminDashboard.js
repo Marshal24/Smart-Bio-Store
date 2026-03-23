@@ -250,13 +250,81 @@ export default function AdminDashboard() {
     setColorVariants(newArr);
   };
 
+  const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      // If it's not an image, skip compression
+      if (!file.type.startsWith('image/')) return resolve(file);
+      
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > maxWidth) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file); // Fallback to original
+            }
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = (err) => resolve(file); // Fallback
+      };
+      reader.onerror = (err) => resolve(file); // Fallback
+    });
+  };
+
   const uploadFileToSupabase = async (file) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}-${Date.now()}.${fileExt}`;
-    const { error } = await supabase.storage.from('products').upload(fileName, file);
-    if (error) throw error;
-    const { data } = supabase.storage.from('products').getPublicUrl(fileName);
-    return data.publicUrl;
+    try {
+      console.log(`Uploading file: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+      
+      // Compress if it's an image
+      const processedFile = await compressImage(file);
+      console.log(`Processed file size: ${(processedFile.size / 1024).toFixed(2)} KB`);
+
+      const fileExt = processedFile.name.split('.').pop();
+      const fileName = `${Math.random()}-${Date.now()}.${fileExt}`;
+      
+      const { error } = await supabase.storage.from('products').upload(fileName, processedFile);
+      
+      if (error) {
+        console.error("Supabase storage error:", error);
+        throw error;
+      }
+      
+      const { data } = supabase.storage.from('products').getPublicUrl(fileName);
+      return data.publicUrl;
+    } catch (err) {
+      console.error("Upload process error:", err);
+      throw err;
+    }
   };
 
   const saveProduct = async (e) => {
