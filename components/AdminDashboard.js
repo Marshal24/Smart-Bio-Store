@@ -122,30 +122,57 @@ export default function AdminDashboard() {
     let finalCover = settings.store_cover;
 
     try {
-      if (logoFile) finalLogo = await uploadFileToSupabase(logoFile);
-      if (coverFile) finalCover = await uploadFileToSupabase(coverFile);
+      // 1. Storage Uploads
+      if (logoFile) {
+        try {
+          finalLogo = await uploadFileToSupabase(logoFile);
+        } catch (uploadErr) {
+          console.error("Logo upload error:", uploadErr);
+          throw new Error(`خطأ في رفع الشعار: ${uploadErr.message || "حدثت مشكلة أثناء الرفع"}`);
+        }
+      }
+      
+      if (coverFile) {
+        try {
+          finalCover = await uploadFileToSupabase(coverFile);
+        } catch (uploadErr) {
+          console.error("Cover upload error:", uploadErr);
+          throw new Error(`خطأ في رفع الغلاف: ${uploadErr.message || "حدثت مشكلة أثناء الرفع"}`);
+        }
+      }
 
-      const { error } = await supabase.from("store_settings").upsert({
+      // 2. Data Preparation & Sanitization
+      const bAmount = Number(settings.bundle_amount);
+      const bThreshold = Number(settings.bundle_threshold);
+
+      const upsertData = {
         id: 1,
         whatsapp_number: settings.whatsapp_number,
-        bundle_amount: Number(settings.bundle_amount),
-        bundle_threshold: Number(settings.bundle_threshold),
-        categories: settings.categories,
+        bundle_amount: isNaN(bAmount) ? 0 : bAmount,
+        bundle_threshold: isNaN(bThreshold) ? 0 : bThreshold,
+        categories: settings.categories || [],
         store_name: settings.store_name || "Boutique",
         store_bio: settings.store_bio || "",
         store_cover: finalCover || "",
         primary_color: settings.primary_color || "#000000",
         store_logo: finalLogo || ""
-      });
+      };
 
-      if (error) throw error;
-      showToast("تم حفظ الإعدادات بنجاح");
+      // 3. Database Upsert
+      const { error } = await supabase.from("store_settings").upsert(upsertData);
+
+      if (error) {
+        console.error("Database upsert error:", error);
+        throw new Error(`خطأ قاعدة البيانات: ${error.message || "فشل في حفظ الإعدادات"}`);
+      }
+
+      showToast("تم حفظ الإعدادات بنجاح ✨");
       setSettings(prev => ({ ...prev, store_logo: finalLogo, store_cover: finalCover }));
       setLogoFile(null);
       setCoverFile(null);
     } catch (err) {
-      console.error("Save settings error: ", err);
-      showToast(`خطأ قاعدة البيانات: ${err.message || "Unknown"}`, "error");
+      console.error("Save settings caught error:", err);
+      showToast(err.message || "حدث خطأ غير متوقع", "error");
     } finally {
       setLoading(false);
     }
