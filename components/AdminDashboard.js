@@ -807,7 +807,7 @@ export default function AdminDashboard() {
                       type="text"
                       value={settings.whatsapp_number || ""}
                       onChange={(e) => setSettings({...settings, whatsapp_number: e.target.value})}
-                      placeholder="96477..."
+                      placeholder="رقم الواتساب هنا"
                       dir="ltr"
                       className="w-full p-4 md:p-5 bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white rounded-2xl text-lg md:text-2xl font-black text-center tracking-wider transition-all outline-none"
                     />
@@ -874,7 +874,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">وصف قصير (Bio)</label>
-                      <input type="text" placeholder="مثال: أرقى وأفضل التصاميم..." value={settings.store_bio} onChange={e => setSettings({ ...settings, store_bio: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition" />
+                      <input type="text" placeholder="اكتب وصفاً مختصراً لمتجرك" value={settings.store_bio} onChange={e => setSettings({ ...settings, store_bio: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition" />
                     </div>
                   </div>
 

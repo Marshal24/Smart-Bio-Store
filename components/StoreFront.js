@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShoppingBag, Search, X, Plus, Minus, Trash2, MapPin, Percent, Check, MessageCircle, Filter, BadgeCheck } from 'lucide-react';
+import { ShoppingBag, Search, X, Plus, Minus, Trash2, MapPin, Percent, Check, MessageCircle, Filter, BadgeCheck, Home } from 'lucide-react';
 
 export default function StoreFront() {
   const [products, setProducts] = useState([]);
@@ -376,7 +376,7 @@ export default function StoreFront() {
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar justify-start sm:justify-center px-2">
+          <div id="categories-section" className="flex gap-2 overflow-x-auto pb-4 no-scrollbar justify-start sm:justify-center px-2 scroll-mt-24">
             <button
               onClick={() => setActiveCategory("الكل")}
               className={`px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition-all active:scale-95 border
@@ -640,7 +640,7 @@ export default function StoreFront() {
                           <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">الاسم الكامل للزبون</label>
                           <input 
                             type="text" 
-                            placeholder="مثال: علي احمد حسن"
+                            placeholder="أدخل اسمك الكامل"
                             className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
                           />
                         </div>
@@ -666,7 +666,7 @@ export default function StoreFront() {
                                type="text"
                                value={promoCode}
                                onChange={(e) => setPromoCode(e.target.value)}
-                               placeholder="PROMO10"
+                               placeholder="رمز الخصم هنا"
                                className="flex-1 p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black uppercase text-center font-mono font-black transition-all placeholder:text-gray-200 shadow-sm"
                              />
                              <button onClick={verifyPromoCode} className="px-6 bg-black text-white rounded-2xl font-black text-xs hover:bg-gray-800 transition active:scale-95 shadow-lg shadow-black/10">تطبيق</button>
@@ -725,6 +725,52 @@ export default function StoreFront() {
             </div>
           </div>
         )}
+      </div>
+      {/* Mobile Bottom Navigation (Elite Tab Bar) */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-gray-100 px-6 py-2.5 sm:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.05)] flex items-center justify-between pb-safe">
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center gap-1 group">
+          <div className="p-2 rounded-xl active:bg-gray-100 transition-colors">
+            <Home className="w-5 h-5 text-gray-800" />
+          </div>
+          <span className="text-[9px] font-black text-gray-800">الرئيسية</span>
+        </button>
+        
+        <button onClick={() => { document.getElementById('categories-section')?.scrollIntoView({ behavior: 'smooth' }); }} className="flex flex-col items-center gap-1 group">
+           <div className="p-2 rounded-xl active:bg-gray-100 transition-colors">
+              <Filter className="w-5 h-5 text-gray-400" />
+           </div>
+          <span className="text-[9px] font-bold text-gray-400">الأقسام</span>
+        </button>
+
+        {/* Center Cart Button */}
+        <div className="relative -mt-8">
+          <button 
+            onClick={() => setCheckoutModalOpen(true)} 
+            className="w-14 h-14 bg-black rounded-2xl shadow-xl shadow-black/30 flex items-center justify-center border-4 border-white active:scale-90 transition-transform"
+          >
+            <ShoppingBag className="w-6 h-6 text-white" />
+            {cartItemsQty > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce-subtle">
+                {cartItemsQty}
+              </span>
+            )}
+          </button>
+          <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-black whitespace-nowrap">السلة</span>
+        </div>
+
+        <button onClick={() => { document.querySelector('input[type="text"]')?.focus(); }} className="flex flex-col items-center gap-1 group">
+           <div className="p-2 rounded-xl active:bg-gray-100 transition-colors">
+              <Search className="w-5 h-5 text-gray-400" />
+           </div>
+          <span className="text-[9px] font-bold text-gray-400">بحث</span>
+        </button>
+
+        <a href={`https://wa.me/${settings.whatsapp_number}`} target="_blank" className="flex flex-col items-center gap-1 group">
+           <div className="p-2 rounded-xl active:bg-gray-100 transition-colors">
+              <MessageCircle className="w-5 h-5 text-green-500" />
+           </div>
+          <span className="text-[9px] font-bold text-gray-400">واتساب</span>
+        </a>
       </div>
     </div>
   );
