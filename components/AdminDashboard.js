@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { Lock, LogOut, Plus, Trash2, Image as ImageIcon, Save, CheckCircle2, AlertCircle, Percent, Edit3, Settings, X, UploadCloud, Zap } from "lucide-react";
+import { Lock, LogOut, Plus, Trash2, Image as ImageIcon, Save, CheckCircle2, AlertCircle, Percent, Edit3, Settings, X, UploadCloud, Zap, Check, Phone } from "lucide-react";
 
 const ACCESS_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
 const SIZES = ["S", "M", "L", "XL", "XXL"]; // Still used for some global defaults
