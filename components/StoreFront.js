@@ -123,8 +123,16 @@ export default function StoreFront() {
   const openProductModal = (product) => {
     setSelectedProduct(product);
     setSelectedSize("");
-    setSelectedColor(null);
-    setActiveModalImage(product.image_url);
+    
+    const colors = product.variants?.colors || [];
+    if (colors.length > 0) {
+      const firstColor = colors[0];
+      setSelectedColor(firstColor);
+      setActiveModalImage(typeof firstColor === "string" ? product.image_url : (firstColor.image_url || product.image_url));
+    } else {
+      setSelectedColor(null);
+      setActiveModalImage(product.image_url);
+    }
   };
 
   const handleColorSelection = (colorObj) => {
@@ -242,30 +250,30 @@ export default function StoreFront() {
     <div className="w-full pb-32 min-h-screen bg-[#F9FAFB] selection:bg-black selection:text-white">
       {/* Sticky Brand Header (Ultra-Luxury Floating Pill) */}
       <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isScrolled ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-12 opacity-0 scale-90 pointer-events-none'}`}>
-        <div className="bg-white/40 backdrop-blur-3xl border border-white/40 px-5 py-2.5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center gap-4 group hover:bg-white/60 transition-all cursor-pointer ring-1 ring-black/5" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border-2 border-white shadow-md overflow-hidden bg-white shrink-0 group-hover:scale-105 transition-transform duration-500">
+        <div className="bg-white/80 backdrop-blur-3xl border border-white/40 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex items-center gap-2 sm:gap-4 group hover:bg-white transition-all cursor-pointer ring-1 ring-black/5" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full border border-white shadow-sm overflow-hidden bg-white shrink-0 group-hover:scale-105 transition-transform duration-500">
             <img src={settings.store_logo} className="w-full h-full object-cover" alt="" />
           </div>
-          <div className="flex flex-col">
-            <h2 className="font-black text-sm sm:text-base tracking-tighter flex items-center gap-1.5 leading-none" style={{ color: settings.primary_color || '#000' }}>
-              {settings.store_name}
-              <span className="flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full shrink-0 -translate-y-0.5" style={{ backgroundColor: settings.primary_color || '#000' }}>
-                <Check className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" strokeWidth={6} />
+          <div className="flex flex-col min-w-[60px]">
+            <h2 className="font-black text-[11px] sm:text-base tracking-tighter flex items-center gap-1 leading-none" style={{ color: settings.primary_color || '#000' }}>
+              <span className="truncate max-w-[80px] sm:max-w-none">{settings.store_name}</span>
+              <span className="flex items-center justify-center w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: settings.primary_color || '#000' }}>
+                <Check className="w-2 h-2 text-white" strokeWidth={6} />
               </span>
             </h2>
-            <span className="text-[9px] uppercase font-black tracking-widest text-gray-500 mt-0.5 opacity-60">تصفح الآن</span>
+            <span className="text-[7px] sm:text-[9px] uppercase font-black tracking-widest text-gray-400 mt-0.5 opacity-60">تصفح الآن</span>
           </div>
 
-          <div className="w-[1px] h-6 bg-black/10 mx-1"></div>
+          <div className="w-[1px] h-4 sm:h-6 bg-black/10 mx-0.5 sm:mx-1"></div>
 
           <button
             onClick={(e) => { e.stopPropagation(); setCheckoutModalOpen(true); }}
-            className="p-2.5 bg-white rounded-full hover:scale-110 transition relative shadow-sm border border-black/5"
+            className="p-1.5 sm:p-2.5 bg-gray-50 rounded-full hover:scale-110 transition relative shadow-sm border border-black/5"
             style={{ color: settings.primary_color || '#000' }}
           >
-            <ShoppingBag className="w-5 h-5" />
+            <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
             {cartItemsQty > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white animate-in zoom-in">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black w-4 h-4 flex items-center justify-center rounded-full border border-white animate-in zoom-in">
                 {cartItemsQty}
               </span>
             )}
@@ -274,7 +282,7 @@ export default function StoreFront() {
       </div>
 
       {/* Ultra-Premium Hero Cover Section */}
-      <div className="relative w-full h-48 sm:h-64 bg-gray-200 overflow-hidden">
+      <div className="relative w-full h-40 sm:h-64 bg-gray-200 overflow-hidden">
         {settings.store_cover ? (
           <>
             <img src={settings.store_cover} alt="Cover" className="w-full h-full object-cover select-none" />
@@ -289,12 +297,12 @@ export default function StoreFront() {
         {/* Luxury Floating Cart Button */}
         <button
           onClick={() => setCheckoutModalOpen(true)}
-          className="absolute top-5 left-5 z-20 bg-white/70 backdrop-blur-xl border border-white/50 p-3.5 rounded-2xl hover:scale-105 transition-all duration-300 shadow-xl flex items-center justify-center group"
+          className="absolute top-4 left-4 z-20 bg-white/40 backdrop-blur-3xl border border-white/50 p-3 rounded-2xl hover:bg-white hover:scale-105 transition-all duration-300 shadow-xl flex items-center justify-center group"
           style={{ color: settings.primary_color || '#000000' }}
         >
-          <ShoppingBag className="w-6 h-6 group-hover:block transition-transform" />
+          <ShoppingBag className="w-6 h-6 transition-transform" />
           {cartItemsQty > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[11px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-in zoom-in shadow-sm">
+            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-in zoom-in shadow-sm">
               {cartItemsQty}
             </span>
           )}
@@ -302,15 +310,15 @@ export default function StoreFront() {
       </div>
 
       {/* Elite Brand Profile Section */}
-      <div className="max-w-7xl mx-auto px-4 relative -mt-16 sm:-mt-20 mb-8 flex flex-col items-center text-center">
+      <div className="max-w-7xl mx-auto px-4 relative -mt-12 sm:-mt-20 mb-8 flex flex-col items-center text-center">
         {/* Avatar with Halo effect */}
-        <div className="relative mb-4 group">
+        <div className="relative mb-3 sm:mb-4 group">
           <div className="absolute inset-0 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity duration-500" style={{ backgroundColor: settings.primary_color || '#000' }}></div>
-          <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 border-[#F9FAFB] bg-white shadow-2xl overflow-hidden flex items-center justify-center z-10 transition-transform duration-500 hover:scale-105">
+          <div className="relative w-24 h-24 sm:w-36 sm:h-36 rounded-3xl border border-white bg-white shadow-2xl overflow-hidden flex items-center justify-center z-10 transition-transform duration-500 hover:scale-105 rotate-3 hover:rotate-0">
             {settings.store_logo ? (
               <img src={settings.store_logo} alt={settings.store_name} className="w-full h-full object-cover select-none" />
             ) : (
-              <span className="text-4xl font-black bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(to bottom right, ${settings.primary_color || '#000'}, #666)` }}>
+              <span className="text-3xl sm:text-4xl font-black bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(to bottom right, ${settings.primary_color || '#000'}, #666)` }}>
                 {(settings.store_name || "Boutique").charAt(0).toUpperCase()}
               </span>
             )}
@@ -318,12 +326,12 @@ export default function StoreFront() {
         </div>
 
         {/* Verified Brand Name */}
-        <div className="flex justify-center mb-2">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter leading-tight flex items-center gap-2" style={{ color: settings.primary_color || '#000000' }}>
+        <div className="flex justify-center mb-1">
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tighter leading-tight flex items-center gap-2" style={{ color: settings.primary_color || '#000000' }}>
             {settings.store_name || "Boutique"}
-            <span className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 shrink-0 -translate-y-0.5 sm:-translate-y-1">
+            <span className="flex items-center justify-center w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0 -translate-y-0.5 sm:-translate-y-1">
               <span className="relative w-full h-full rounded-full flex items-center justify-center shadow-sm" style={{ backgroundColor: settings.primary_color || '#000' }}>
-                <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={5} />
+                <Check className="w-2 sm:w-3 text-white" strokeWidth={6} />
               </span>
             </span>
           </h1>
@@ -331,29 +339,29 @@ export default function StoreFront() {
 
         {/* Elegant Bio */}
         {settings.store_bio && (
-          <p className="text-sm sm:text-base font-semibold text-gray-500 max-w-md leading-relaxed px-4">{settings.store_bio}</p>
+          <p className="text-xs sm:text-base font-bold text-gray-400 max-w-[280px] sm:max-w-md leading-relaxed px-4">{settings.store_bio}</p>
         )}
       </div>
 
       <div className="w-full max-w-7xl mx-auto px-4">
         {/* Search & Categories Navbar */}
-        <div className="mb-8 space-y-6">
+        <div className="mb-10 space-y-6">
           <div className="relative max-w-2xl mx-auto">
             <input
               type="text"
-              placeholder="البحث عن منتج..."
+              placeholder="ابحث عن قطعتك المفضلة..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-white/80 backdrop-blur-md border border-gray-200/60 p-4 pl-12 rounded-full shadow-sm outline-none focus:border-gray-400 focus:bg-white font-medium transition-all text-sm"
+              className="w-full bg-white border border-gray-100 p-4 pl-12 rounded-2xl shadow-sm outline-none focus:border-black font-bold transition-all text-xs sm:text-sm placeholder:text-gray-300"
             />
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
           </div>
 
-          <div className="flex gap-2.5 overflow-x-auto pb-4 custom-scrollbar justify-start sm:justify-center">
+          <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar justify-start sm:justify-center px-2">
             <button
               onClick={() => setActiveCategory("الكل")}
-              className={`px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 
-              ${activeCategory === "الكل" ? "text-white shadow-md" : "text-gray-500 hover:text-black hover:bg-white bg-transparent"}`}
+              className={`px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition-all active:scale-95 border
+              ${activeCategory === "الكل" ? "text-white shadow-lg border-transparent" : "text-gray-400 border-transparent hover:text-black bg-white shadow-sm"}`}
               style={activeCategory === "الكل" ? { backgroundColor: settings.primary_color || '#000000' } : {}}
             >
               الكل
@@ -362,8 +370,8 @@ export default function StoreFront() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 
-                ${activeCategory === cat ? "text-white shadow-md" : "text-gray-500 hover:text-black hover:bg-white bg-transparent"}`}
+                className={`px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition-all active:scale-95 border
+                ${activeCategory === cat ? "text-white shadow-lg border-transparent" : "text-gray-400 border-transparent hover:text-black bg-white shadow-sm"}`}
                 style={activeCategory === cat ? { backgroundColor: settings.primary_color || '#000000' } : {}}
               >
                 {cat}
@@ -373,7 +381,7 @@ export default function StoreFront() {
         </div>
 
         {/* Editorial Product Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-16">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-8 sm:gap-x-8 sm:gap-y-16">
           {filteredProducts.map((product) => {
             const colorsArr = product.variants?.colors || [];
             return (
@@ -382,42 +390,39 @@ export default function StoreFront() {
                 className="group cursor-pointer flex flex-col relative"
                 onClick={() => openProductModal(product)}
               >
-                <div className="bg-gray-100 aspect-[3/4] rounded-[24px] overflow-hidden relative shadow-sm border border-black/5">
+                <div className="bg-white aspect-[3/4.2] rounded-[24px] overflow-hidden relative shadow-sm border border-gray-100 flex items-center justify-center">
                   {product.image_url ? (
                     <img
                       src={product.image_url}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-medium">بدون صورة</div>
+                    <ShoppingBag className="w-10 h-10 text-gray-100" />
                   )}
 
-                  {/* Luxury Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center backdrop-blur-[2px]">
-                    <div className="bg-white/90 backdrop-blur-md text-black w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                      <ShoppingBag className="w-6 h-6" />
-                    </div>
+                  {/* Price Tag Overlay */}
+                  <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg border border-white/20">
+                    <p className="font-black text-[11px] sm:text-xs text-black whitespace-nowrap">
+                      {Number(product.price).toLocaleString()} <span className="text-[9px] opacity-70">د.ع</span>
+                    </p>
                   </div>
                 </div>
 
-                <div className="mt-4 px-1 text-center">
-                  <h3 className="font-bold text-gray-900 tracking-tight text-sm sm:text-base leading-snug">{product.name}</h3>
-                  <div className="flex flex-col items-center mt-2.5 gap-2">
-                    <p className="font-bold text-[13px] sm:text-sm tracking-wide" style={{ color: settings.primary_color || '#666' }}>
-                      {Number(product.price).toLocaleString()} د.ع
-                    </p>
+                <div className="mt-3 px-1">
+                  <h3 className="font-black text-gray-900 tracking-tight text-[13px] sm:text-base leading-tight truncate">{product.name}</h3>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded-md">{product.category}</span>
                     {colorsArr.length > 0 && (
-                      <div className="flex -space-x-1.5 space-x-reverse">
+                      <div className="flex -space-x-1 space-x-reverse">
                         {colorsArr.slice(0, 3).map((color, i) => {
                           const hasImg = typeof color !== "string" && color.image_url;
                           return (
-                            <div key={i} className={`w-4 h-4 rounded-full border border-gray-300 ring-2 ring-white shadow-sm overflow-hidden ${hasImg ? 'bg-transparent' : 'bg-gray-200'}`}>
+                            <div key={i} className={`w-3.5 h-3.5 rounded-full border border-white ring-1 ring-gray-100 shadow-sm overflow-hidden ${hasImg ? 'bg-transparent' : 'bg-gray-200'}`}>
                               {hasImg && <img src={color.image_url} className="w-full h-full object-cover" />}
                             </div>
                           );
                         })}
-                        {colorsArr.length > 3 && <span className="text-[10px] text-gray-400 font-bold mr-2">+{colorsArr.length - 3}</span>}
                       </div>
                     )}
                   </div>
@@ -550,133 +555,154 @@ export default function StoreFront() {
 
         {/* Checkout Modal */}
         {checkoutModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md transition-opacity">
-            <div className="bg-[#F9FAFB] w-full max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar rounded-[32px] shadow-2xl p-6 sm:p-8 animate-in slide-in-from-bottom-6 duration-500 border border-white">
-              <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-5">
-                <h2 className="text-2xl font-black tracking-tight flex items-center gap-2.5 text-gray-900"><ShoppingBag className="w-6 h-6" /> حقيبة التسوق</h2>
-                <button onClick={() => setCheckoutModalOpen(false)} className="p-3 hover:bg-white bg-white/50 rounded-full transition focus:scale-95 text-gray-900 shadow-sm border border-gray-100">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm transition-opacity">
+            <div className="bg-[#F9FAFB] w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden rounded-t-[32px] sm:rounded-[32px] shadow-2xl animate-in slide-in-from-bottom-10 duration-500 border-t sm:border border-white">
+              
+              {/* Header */}
+              <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                <h2 className="text-xl font-black tracking-tight flex items-center gap-2.5 text-gray-900"><ShoppingBag className="w-6 h-6" /> حقيبة التسوق ({cartItemsQty})</h2>
+                <button onClick={() => setCheckoutModalOpen(false)} className="p-2.5 hover:bg-gray-100 bg-gray-50 rounded-xl transition focus:scale-95 text-gray-500">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {cart.length === 0 ? (
-                <div className="py-20 text-center text-gray-500">
-                  <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-gray-100">
-                    <ShoppingBag className="w-10 h-10 text-gray-300" />
+              <div className="overflow-y-auto custom-scrollbar flex-1 p-5 sm:p-8 space-y-8">
+                {cart.length === 0 ? (
+                  <div className="py-20 text-center text-gray-500">
+                    <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-gray-100">
+                      <ShoppingBag className="w-10 h-10 text-gray-200" />
+                    </div>
+                    <p className="font-black text-lg text-gray-900 tracking-tight">الحقيبة فارغة حالياً</p>
+                    <p className="text-xs mt-2 font-bold text-gray-400">تصفح منتجاتنا وأضف ما يعجبك!</p>
                   </div>
-                  <p className="font-bold text-xl text-gray-900 tracking-tight">حقيبة التسوق فارغة</p>
-                  <p className="text-sm mt-2 font-medium">أضف منتجات رائعة لتسوقها الآن.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4 mb-8">
-                    {cart.map((item, idx) => (
-                      <div key={idx} className="flex gap-4 p-4 border border-transparent hover:border-gray-200 bg-white rounded-[24px] shadow-sm transition-all group">
-                        {item.displayImage ? (
-                          <img src={item.displayImage} alt="" className="w-24 h-28 object-cover rounded-2xl border border-gray-50 shrink-0" />
-                        ) : (
-                          <div className="w-24 h-28 bg-gray-50 rounded-2xl flex items-center justify-center text-xs text-gray-400 border border-gray-50 shrink-0 font-medium">بدون صورة</div>
-                        )}
+                ) : (
+                  <>
+                    {/* Cart Items */}
+                    <div className="space-y-3">
+                      {cart.map((item, idx) => (
+                        <div key={idx} className="flex gap-4 p-3 bg-white rounded-2xl border border-gray-50 shadow-sm transition-all">
+                          <div className="w-20 h-24 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-50">
+                            {item.displayImage ? (
+                                <img src={item.displayImage} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center px-1">Img</div>
+                            )}
+                          </div>
 
-                        <div className="flex flex-col flex-1 justify-between py-1.5">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-bold text-gray-900 leading-snug tracking-tight text-base">{item.name}</h4>
-                              <div className="flex flex-wrap items-center gap-2 mt-2">
-                                <span className="text-[11px] bg-gray-50 text-gray-600 px-2.5 py-1 rounded-md font-bold border border-gray-100">مقاس {item.selectedSize}</span>
-                                {item.selectedColor && <span className="text-[11px] bg-gray-50 text-gray-600 px-2.5 py-1 rounded-md font-bold border border-gray-100">{item.selectedColor}</span>}
+                          <div className="flex flex-col flex-1 py-0.5 overflow-hidden">
+                            <div className="flex justify-between items-start gap-2">
+                              <h4 className="font-black text-gray-900 leading-tight text-sm truncate">{item.name}</h4>
+                              <button onClick={() => removeFromCart(idx)} className="text-gray-300 hover:text-red-500 p-1 transition"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                              <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded border border-gray-100 font-bold">مقاس {item.selectedSize}</span>
+                              {item.selectedColor && <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded border border-gray-100 font-bold">{item.selectedColor}</span>}
+                            </div>
+
+                            <div className="flex justify-between items-center mt-auto">
+                              <span className="font-black text-sm text-gray-900">{(item.price * item.quantity).toLocaleString()} د.ع</span>
+                              
+                              <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
+                                <button onClick={() => updateQuantity(idx, -1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-400 hover:text-black transition"><Minus className="w-3 h-3" /></button>
+                                <span className="text-xs font-black w-4 text-center">{item.quantity}</span>
+                                <button onClick={() => updateQuantity(idx, 1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-900 hover:bg-gray-100 transition"><Plus className="w-3 h-3" /></button>
                               </div>
                             </div>
-                            <button onClick={() => removeFromCart(idx)} className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-xl transition"><Trash2 className="w-4 h-4" /></button>
-                          </div>
-
-                          <div className="flex justify-between items-center mt-3">
-                            <span className="font-black text-sm tracking-wide" style={{ color: settings.primary_color || '#000000' }}>{(item.price * item.quantity).toLocaleString()} د.ع</span>
-
-                            {/* Quantity Controls */}
-                            <div className="flex items-center gap-3 border border-gray-100 rounded-xl p-1 px-2">
-                              <button onClick={() => updateQuantity(idx, -1)} className="w-7 h-7 flex items-center justify-center bg-gray-50 rounded-lg hover:bg-gray-200 transition active:scale-95 text-gray-600"><Minus className="w-3.5 h-3.5 font-bold" /></button>
-                              <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
-                              <button onClick={() => updateQuantity(idx, 1)} className="w-7 h-7 flex items-center justify-center bg-gray-50 rounded-lg hover:bg-gray-200 transition active:scale-95 text-gray-900"><Plus className="w-3.5 h-3.5 font-bold" /></button>
-                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="space-y-6 bg-white p-6 sm:p-8 rounded-[32px] border border-gray-100 shadow-sm">
-                    {/* Governorate Logic */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-gray-900 mb-3 tracking-wide"><MapPin className="w-4 h-4" /> مدينة التوصيل</label>
-                      <div className="relative">
-                        <select
-                          value={governorate}
-                          onChange={(e) => setGovernorate(e.target.value)}
-                          className="w-full p-4.5 py-4 rounded-2xl border border-gray-200 outline-none focus:border-gray-900 appearance-none bg-gray-50/50 hover:bg-gray-50 focus:bg-white font-semibold transition-colors shadow-sm"
-                        >
-                          {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov} ({gov === "Kirkuk" ? "3,000" : "5,000"} د.ع)</option>)}
-                        </select>
-                      </div>
+                      ))}
                     </div>
 
-                    {/* Promo Code Logic */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-gray-900 mb-3 tracking-wide"><Percent className="w-4 h-4" /> رمز ترويجي</label>
-                      <div className="flex gap-2.5">
-                        <input
-                          type="text"
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value)}
-                          placeholder="أدخل الرمز هنا"
-                          className="flex-1 p-4 rounded-2xl border border-gray-200 outline-none focus:border-gray-900 bg-gray-50/50 hover:bg-gray-50 focus:bg-white uppercase text-center font-mono font-bold transition-colors shadow-sm"
-                        />
-                        <button
-                          onClick={verifyPromoCode}
-                          className="bg-gray-900 text-white px-7 rounded-2xl font-bold hover:bg-black transition-colors shadow-lg active:scale-95 tracking-wide"
-                        >
-                          تأكيد
-                        </button>
-                      </div>
-                      {promoError && <p className="text-red-500 text-xs mt-3 font-bold flex items-center gap-1.5"><X className="w-3.5 h-3.5" /> {promoError}</p>}
-                      {appliedPromo && <p className="text-green-600 text-xs mt-3 flex items-center gap-1.5 font-bold"><Check className="w-3.5 h-3.5" /> تم التفعيل ({appliedPromo.discount_value.toLocaleString()} د.ع)</p>}
-                    </div>
-
-                    {/* Pricing Matrix */}
-                    <div className="bg-gray-50/80 p-6 rounded-3xl border border-gray-100 space-y-3.5 text-sm font-medium">
-                      <div className="flex justify-between"><span className="text-gray-500 font-bold">المشتريات ({cartItemsQty}):</span> <span className="font-bold text-gray-900">{subtotal.toLocaleString()} د.ع</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500 font-bold">التوصيل ({governorate}):</span> <span className="font-bold text-gray-900">{deliveryFee.toLocaleString()} د.ع</span></div>
-
-                      {bundleDiscount > 0 && (
-                        <div className="flex justify-between text-green-700 bg-green-50/50 p-3 rounded-2xl border border-green-100">
-                          <span className="flex items-center gap-1.5 font-bold"><Check className="w-4 h-4" /> خصم العرض الشامل</span>
-                          <span className="font-bold">-{bundleDiscount.toLocaleString()} د.ع</span>
+                    <div className="space-y-6">
+                      {/* Form Details */}
+                      <div className="grid grid-cols-1 gap-5">
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">الاسم الكامل للزبون</label>
+                          <input 
+                            type="text" 
+                            placeholder="مثال: علي احمد حسن"
+                            className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
+                          />
                         </div>
-                      )}
 
-                      {promoDiscount > 0 && (
-                        <div className="flex justify-between text-amber-700 bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-                          <span className="flex items-center gap-1.5 font-bold"><Check className="w-4 h-4" /> قسيمة الخصم</span>
-                          <span className="font-bold">-{promoDiscount.toLocaleString()} د.ع</span>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">مدينة التوصيل</label>
+                          <div className="relative">
+                            <select
+                              value={governorate}
+                              onChange={(e) => setGovernorate(e.target.value)}
+                              className="w-full p-4 bg-white rounded-2xl border border-gray-100 outline-none focus:border-black appearance-none font-bold transition-all shadow-sm pr-10"
+                            >
+                              {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov} ({gov === "كركوك" || gov === "Kirkuk" ? "3,000" : "5,000"} د.ع)</option>)}
+                            </select>
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          </div>
                         </div>
-                      )}
+
+                        <div className="space-y-2">
+                           <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">رمز الخصم (إن وجد)</label>
+                           <div className="flex gap-2">
+                             <input
+                               type="text"
+                               value={promoCode}
+                               onChange={(e) => setPromoCode(e.target.value)}
+                               placeholder="PROMO10"
+                               className="flex-1 p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black uppercase text-center font-mono font-black transition-all placeholder:text-gray-200 shadow-sm"
+                             />
+                             <button onClick={verifyPromoCode} className="px-6 bg-black text-white rounded-2xl font-black text-xs hover:bg-gray-800 transition active:scale-95 shadow-lg shadow-black/10">تطبيق</button>
+                           </div>
+                           {promoError && <p className="text-[10px] text-red-500 font-bold mr-2 mt-1">{promoError}</p>}
+                           {appliedPromo && <p className="text-[10px] text-green-600 font-bold mr-2 mt-1">تم تفعيل الخصم بنجاح! 🎉</p>}
+                        </div>
+                      </div>
+
+                      {/* Summary Card */}
+                      <div className="bg-gray-900 rounded-[32px] p-6 text-white shadow-2xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+                        
+                        <div className="space-y-4 relative z-10">
+                          <div className="flex justify-between items-center text-xs text-gray-400 font-bold opacity-80 uppercase tracking-widest">
+                            <span>ملخص الحساب</span>
+                            <span>{cartItemsQty} قطع</span>
+                          </div>
+                          
+                          <div className="space-y-2 text-sm border-t border-white/10 pt-4">
+                            <div className="flex justify-between"><span>المشتريات</span> <span>{subtotal.toLocaleString()} د.ع</span></div>
+                            <div className="flex justify-between"><span>التوصيل</span> <span>{deliveryFee.toLocaleString()} د.ع</span></div>
+                            
+                            {bundleDiscount > 0 && (
+                              <div className="flex justify-between text-green-400 font-bold">
+                                <span>خصم العرض الشامل</span>
+                                <span>-{bundleDiscount.toLocaleString()} د.ع</span>
+                              </div>
+                            )}
+
+                            {promoDiscount > 0 && (
+                              <div className="flex justify-between text-yellow-400 font-bold">
+                                <span>خصم القسيمة</span>
+                                <span>-{promoDiscount.toLocaleString()} د.ع</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex justify-between items-center pt-4 border-t border-white/20 mt-4">
+                            <span className="text-sm font-black text-gray-300">المبلغ النهائي:</span>
+                            <span className="text-2xl font-black text-white">{Math.max(0, grandTotal).toLocaleString()} د.ع</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="pt-4 flex justify-between items-center">
-                      <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">الإجمالي:</span>
-                      <span className="text-3xl font-black text-gray-900 tracking-tight">{Math.max(0, grandTotal).toLocaleString()} د.ع</span>
-                    </div>
-                  </div>
-
-                  {/* WhatsApp Checkout */}
-                  <button
-                    onClick={handleWhatsAppCheckout}
-                    className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-5 rounded-[24px] font-bold tracking-wide text-lg transition-all flex items-center justify-center gap-3 mt-6 active:scale-95 shadow-xl shadow-green-500/20"
-                  >
-                    <MessageCircle className="w-6 h-6" /> إرسال الطلب عبر واتساب
-                  </button>
-                </>
-              )}
+                    <button
+                      onClick={handleWhatsAppCheckout}
+                      className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-5 rounded-[24px] font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl shadow-green-500/20 active:scale-[0.98]"
+                    >
+                      <MessageCircle className="w-6 h-6" /> إكمال الطلب الآن
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}

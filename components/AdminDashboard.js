@@ -578,34 +578,37 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Navbar Minimalist */}
+       {/* Navbar Minimalist */}
       <nav className="bg-white border-b sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-black text-white flex items-center justify-center rounded-xl shadow-lg shadow-black/20">
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="font-black text-xl tracking-tight leading-tight">غرفة التحكم القيادية</h1>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">CMS System v2.0</p>
+              <h1 className="font-black text-lg md:text-xl tracking-tight leading-tight">غرفة التحكم القيادية</h1>
+              <p className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest">CMS System v2.0</p>
             </div>
           </div>
-          <button onClick={() => setIsAuthenticated(false)} className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl text-black transition flex items-center gap-2 text-sm font-bold shadow-inner active:scale-95">
-            الخروج <LogOut className="w-4 h-4" />
+          <button
+            onClick={() => setIsAuthenticated(false)}
+            className="bg-gray-100 hover:bg-gray-200 px-4 py-2.5 rounded-xl text-black transition flex items-center gap-2 text-sm font-bold shadow-inner active:scale-95"
+          >
+            <span className="hidden sm:inline">الخروج</span> <LogOut className="w-4 h-4 text-red-500" />
           </button>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-10">
+      <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
         {/* Modern Pills Tabs */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-10 bg-white p-2 w-full sm:w-fit rounded-2xl shadow-sm border border-gray-100 pointer-events-auto">
-          <button onClick={() => setActiveTab("products")} className={`flex-1 px-6 sm:px-8 py-3 sm:py-3 py-3 rounded-xl font-bold transition-all ${activeTab === 'products' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+        <div className="flex flex-col sm:flex-row gap-2 mb-10 bg-white p-2 w-full sm:w-fit rounded-2xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar">
+          <button onClick={() => setActiveTab("products")} className={`whitespace-nowrap flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'products' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
             إدارة المنتجات
           </button>
-          <button onClick={() => setActiveTab("promos")} className={`flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'promos' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+          <button onClick={() => setActiveTab("promos")} className={`whitespace-nowrap flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'promos' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
             العروض والخصومات
           </button>
-          <button onClick={() => setActiveTab("settings")} className={`flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+          <button onClick={() => setActiveTab("settings")} className={`whitespace-nowrap flex-1 px-6 sm:px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
             إعدادات المتجر المتطورة
           </button>
         </div>
@@ -613,12 +616,12 @@ export default function AdminDashboard() {
         {/* --- TAB: PRODUCTS --- */}
         {activeTab === "products" && (
           <div className="animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
               <h2 className="text-2xl font-black flex items-center gap-3">
                 المخزون <span className="text-sm bg-gray-100 text-black px-3 py-1 rounded-full font-bold">{products.length} منتج</span>
               </h2>
-              <button onClick={openAddProduct} className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg shadow-black/20 flex items-center gap-2 active:scale-95">
-                <Plus className="w-5 h-5" /> أضف منتج
+              <button onClick={openAddProduct} className="w-full sm:w-auto bg-black text-white px-6 py-3.5 rounded-xl font-bold hover:bg-gray-800 transition shadow-lg shadow-black/20 flex items-center justify-center gap-2 active:scale-95">
+                <Plus className="w-5 h-5" /> أضف منتج جديد
               </button>
             </div>
 
@@ -640,14 +643,14 @@ export default function AdminDashboard() {
                           {product.category}
                         </div>
                       </div>
-                      <div className="flex-1 py-1">
-                        <h3 className="font-black text-lg leading-tight mb-2 text-gray-900 group-hover:text-amber-700 transition-colors">{product.name}</h3>
+                      <div className="flex-1 py-1 overflow-hidden">
+                        <h3 className="font-black text-lg leading-tight mb-2 text-gray-900 group-hover:text-amber-700 transition-colors truncate">{product.name}</h3>
                         <p className="text-black font-black bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 inline-block text-sm shadow-sm">{Number(product.price).toLocaleString()} د.ع</p>
 
                         {colorsArr.length > 0 && (
-                          <div className="mt-3 flex gap-1 flex-wrap">
+                          <div className="mt-3 flex gap-1 flex-wrap overflow-hidden h-7">
                             {colorsArr.map((color, i) => (
-                              <span key={i} className="text-[10px] bg-white border border-gray-200 shadow-sm text-gray-700 px-2 py-1 rounded-md font-bold flex items-center gap-1">
+                              <span key={i} className="text-[10px] bg-white border border-gray-200 shadow-sm text-gray-700 px-2 py-1 rounded-md font-bold flex items-center gap-1 whitespace-nowrap">
                                 {color.image_url && <span className="w-2 h-2 rounded-full bg-green-400/20"><ImageIcon className="w-2 h-2 text-green-600" /></span>}
                                 {color.name}
                               </span>
@@ -659,14 +662,14 @@ export default function AdminDashboard() {
 
                     <div className="mt-auto border-t border-gray-100 pt-4 pb-2">
                       <p className="text-[11px] uppercase tracking-wider text-gray-400 font-bold mb-2">إمداد المقاسات السريع:</p>
-                      <div className="flex gap-1.5 mb-4">
-                        {SIZES.map(size => {
+                      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-2 no-scrollbar">
+                        {(SIZE_TEMPLATES[product.variants?.size_type || 'ALPHA']?.values || SIZE_TEMPLATES.ALPHA.values).map(size => {
                           const isAvailable = sizesObj[size] !== false;
                           return (
                             <button
                               key={size}
                               onClick={() => toggleVariantFast(product, size)}
-                              className={`w-9 h-9 rounded-lg font-bold text-xs transition-all ${isAvailable ? 'bg-black text-white shadow-md hover:bg-gray-800' : 'bg-gray-50 text-gray-300 border border-gray-200 hover:bg-gray-100'}`}
+                              className={`w-9 h-9 shrink-0 rounded-lg font-bold text-[10px] transition-all ${isAvailable ? 'bg-black text-white shadow-md hover:bg-gray-800' : 'bg-gray-50 text-gray-300 border border-gray-200 hover:bg-gray-100'}`}
                             >
                               {size}
                             </button>
@@ -676,10 +679,10 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="flex gap-2 border-t border-gray-100 pt-4">
-                      <button onClick={() => openEditProduct(product)} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-black py-2.5 rounded-xl text-sm font-bold transition flex justify-center items-center gap-2 active:scale-95 shadow-sm">
-                        <Edit3 className="w-4 h-4" /> تعديل المنتج
+                      <button onClick={() => openEditProduct(product)} className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-black py-3 rounded-xl text-sm font-bold transition flex justify-center items-center gap-2 active:scale-95 shadow-sm">
+                        <Edit3 className="w-4 h-4" /> تعديل
                       </button>
-                      <button onClick={() => deleteProduct(product)} className="w-[52px] shrink-0 bg-white hover:bg-red-500 hover:border-red-500 hover:text-white text-red-500 border border-red-100 transition shadow-sm rounded-xl flex items-center justify-center active:scale-95">
+                      <button onClick={() => deleteProduct(product)} className="w-12 shrink-0 bg-white hover:bg-red-500 hover:border-red-500 hover:text-white text-red-500 border border-red-100 transition shadow-sm rounded-xl flex items-center justify-center active:scale-95">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -689,7 +692,7 @@ export default function AdminDashboard() {
             </div>
 
             {products.length === 0 && (
-              <div className="text-center py-32 bg-white rounded-3xl border border-dashed border-gray-300 shadow-sm mt-8">
+              <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-gray-300 shadow-sm mt-8">
                 <div className="inline-block p-5 bg-gray-50 rounded-full mb-6">
                   <ImageIcon className="w-10 h-10 text-gray-400" />
                 </div>
@@ -703,24 +706,24 @@ export default function AdminDashboard() {
         {/* --- TAB: PROMOS --- */}
         {activeTab === "promos" && (
           <div className="grid lg:grid-cols-12 gap-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4">
-            <div className="lg:col-span-5">
-              <form onSubmit={addPromoCode} className="bg-white p-8 rounded-3xl shadow-xl shadow-black/5 border border-gray-100 sticky top-28">
+            <div className="lg:col-span-12 xl:col-span-5">
+              <form onSubmit={addPromoCode} className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-black/5 border border-gray-100 md:sticky md:top-28">
                 <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center mb-6 shadow-md"><Percent className="w-6 h-6" /></div>
                 <h2 className="text-xl font-black mb-6">إصدار كود جديد</h2>
                 <div className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">كلمة المرور الترويجية</label>
-                      <input required type="text" value={newPromo.code} onChange={e => setNewPromo({ ...newPromo, code: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none uppercase font-mono bg-gray-50 focus:bg-white transition shadow-inner" placeholder="أدخل الكود" />
+                      <label className="block text-xs font-bold text-gray-700 mb-2">كلمة المرور</label>
+                      <input required type="text" value={newPromo.code} onChange={e => setNewPromo({ ...newPromo, code: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none uppercase font-mono bg-gray-50 focus:bg-white transition shadow-inner" placeholder="الكود" />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">قيمة الخصم (د.ع)</label>
-                      <input required min="0" type="number" value={newPromo.discount_value} onChange={e => setNewPromo({ ...newPromo, discount_value: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition shadow-inner" placeholder="قيمة الخصم" />
+                      <label className="block text-xs font-bold text-gray-700 mb-2">قيمة الخصم (د.ع)</label>
+                      <input required min="0" type="number" value={newPromo.discount_value} onChange={e => setNewPromo({ ...newPromo, discount_value: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition shadow-inner" placeholder="المبلغ" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2 flex justify-between">
-                      تاريخ ووقت انتهاء الصلاحية <span className="text-gray-400 text-xs">(اختياري - يترك فارغاً للخصم الدائم)</span>
+                    <label className="block text-xs font-bold text-gray-700 mb-2 flex justify-between">
+                      تاريخ انتهاء الصلاحية <span className="text-gray-400 text-[10px]">(اختياري)</span>
                     </label>
                     <input type="datetime-local" value={newPromo.expires_at} onChange={e => setNewPromo({ ...newPromo, expires_at: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition shadow-inner" />
                   </div>
@@ -729,42 +732,41 @@ export default function AdminDashboard() {
               </form>
             </div>
 
-            <div className="lg:col-span-7 space-y-4">
-              <h2 className="text-xl font-black mb-6 flex items-center gap-2">الأكواد الفعّالة والسابقة <span className="text-sm bg-black text-white px-2 py-0.5 rounded-md">{promoCodes.length}</span></h2>
+            <div className="lg:col-span-12 xl:col-span-7 space-y-4">
+              <h2 className="text-xl font-black mb-6 flex items-center gap-2">الأكواد الفعّالة <span className="text-sm bg-black text-white px-2 py-0.5 rounded-md">{promoCodes.length}</span></h2>
               {promoCodes.map(promo => {
                 const isExpired = promo.expires_at && new Date(promo.expires_at) < new Date();
                 const statusBadge = isExpired ?
-                  <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">⏳ منتهي العرض</span> :
+                  <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-bold border border-red-200">منتهي العرض</span> :
                   (!promo.is_active ?
-                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">❌ متوقف يدوياً</span> :
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">✅ فعّال حالياً</span>
+                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-[10px] font-bold border border-gray-200">متوقف</span> :
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold border border-green-200">فعّال</span>
                   );
 
                 return (
-                  <div key={promo.id} className={`p-6 rounded-3xl border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between transition-all hover:shadow-lg ${promo.is_active && !isExpired ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100 opacity-80'}`}>
-                    <div className="flex gap-4 items-center w-full sm:w-auto">
-                      <div className="w-14 h-14 bg-gray-100 rounded-2xl flex border border-dashed border-gray-300 items-center justify-center text-gray-400 shrink-0">
-                        <Percent className="w-6 h-6" />
+                  <div key={promo.id} className={`p-5 md:p-6 rounded-3xl border flex flex-col md:flex-row gap-4 items-start md:items-center justify-between transition-all hover:shadow-lg ${promo.is_active && !isExpired ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100 opacity-80'}`}>
+                    <div className="flex gap-4 items-center w-full">
+                      <div className="w-12 h-12 bg-gray-100 rounded-xl flex border border-dashed border-gray-300 items-center justify-center text-gray-400 shrink-0">
+                        <Percent className="w-5 h-5" />
                       </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <h4 className="font-black font-mono text-2xl tracking-wider text-black">{promo.code}</h4>
+                      <div className="flex-1 overflow-hidden">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-black font-mono text-xl tracking-wider text-black">{promo.code}</h4>
                           {statusBadge}
                         </div>
-                        <p className="text-gray-500 text-sm mt-1 font-medium flex flex-wrap items-center gap-2">
-                          <span>الخصم المطبق: <span className="text-green-600 bg-green-50 px-1 rounded font-bold">{promo.discount_value.toLocaleString()} د.ع</span></span>
-                          {promo.expires_at && <span className="text-[11px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded border border-orange-100">صالح لغاية: {new Date(promo.expires_at).toLocaleString('ar-IQ', { dateStyle: 'short', timeStyle: 'short', hour12: true })}</span>}
+                        <p className="text-gray-500 text-xs mt-1 font-medium flex flex-wrap items-center gap-2">
+                          <span>خصم: <span className="text-green-600 bg-green-50 px-1 rounded font-bold">{promo.discount_value.toLocaleString()} د.ع</span></span>
                         </p>
                       </div>
                     </div>
-                    <div className="flex w-full sm:w-auto mt-2 sm:mt-0 items-center gap-2">
+                    <div className="flex w-full md:w-auto mt-2 md:mt-0 items-center gap-2">
                       <button
                         onClick={() => togglePromoStatus(promo)}
-                        className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95 ${promo.is_active ? 'bg-black text-white hover:bg-gray-800' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${promo.is_active ? 'bg-black text-white hover:bg-gray-800' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                       >
-                        {promo.is_active ? 'إيقاف التفعيل فوراً' : 'تنشيط الكود'}
+                        {promo.is_active ? 'إيقاف' : 'تنشيط'}
                       </button>
-                      <button onClick={() => deletePromoCode(promo.id)} className="p-3 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition border border-transparent hover:border-red-100">
+                      <button onClick={() => deletePromoCode(promo.id)} className="p-2.5 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition border border-transparent hover:border-red-100">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
@@ -774,7 +776,7 @@ export default function AdminDashboard() {
 
               {promoCodes.length === 0 && (
                 <div className="text-center py-20 text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 shadow-sm">
-                  لوحة الخصومات تنتظر أول حملة تسويقية!
+                  لا توجد أكواد حالياً.
                 </div>
               )}
             </div>
@@ -783,107 +785,152 @@ export default function AdminDashboard() {
 
         {/* --- TAB: SETTINGS --- */}
         {activeTab === "settings" && (
-          <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4">
-            <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-black/5 border border-gray-100 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-bl-full -z-0"></div>
-              <div className="relative z-10">
-                <h2 className="text-2xl font-black mb-8 flex items-center gap-3"><Settings className="w-7 h-7" /> إعدادات محرك المتجر (CMS)</h2>
+          <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 space-y-8">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8 overflow-hidden pointer-events-auto">
+              {/* Card: WhatsApp */}
+              <div className="bg-white p-6 md:p-10 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
 
-                <div className="space-y-8">
-                  {/* Brand Identity */}
-                  <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl shadow-sm">
-                    <h3 className="text-lg font-bold text-black mb-1">هوية المتجر (العلامة البيضاء)</h3>
-                    <p className="text-sm text-gray-500 mb-6 font-medium">خصّص اسم متجرك وألوانه وشعاره ليظهر بشكل فريد لزبائنك</p>
-
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">اسم المتجر (البراند)</label>
-                          <input type="text" value={settings.store_name} onChange={e => setSettings({ ...settings, store_name: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none transition" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">وصف قصير (Bio)</label>
-                          <input type="text" placeholder="مثال: أرقى وأفضل التصاميم..." value={settings.store_bio} onChange={e => setSettings({ ...settings, store_bio: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none transition" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">اللون الأساسي (Primary Color)</label>
-                          <div className="flex items-center gap-3">
-                            <input type="color" value={settings.primary_color} onChange={e => setSettings({ ...settings, primary_color: e.target.value })} className="h-14 w-14 rounded-xl cursor-pointer border-0 p-0" />
-                            <span className="text-sm font-mono bg-white px-4 py-3 rounded-xl border font-bold text-gray-600 shadow-sm">{settings.primary_color}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">صورة الشعار (Logo)</label>
-                          <input type="file" accept="image/*" onChange={e => setLogoFile(e.target.files[0])} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black text-sm bg-white" />
-                          {(logoFile || settings.store_logo) && (
-                            <img src={logoFile ? URL.createObjectURL(logoFile) : settings.store_logo} className="h-16 mt-3 object-contain rounded-lg border p-1" />
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">صورة الغلاف الكبيرة (Cover)</label>
-                          <input type="file" accept="image/*" onChange={e => setCoverFile(e.target.files[0])} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black text-sm bg-white" />
-                          {(coverFile || settings.store_cover) && (
-                            <img src={coverFile ? URL.createObjectURL(coverFile) : settings.store_cover} className="h-16 w-full mt-3 object-cover rounded-lg border" />
-                          )}
-                        </div>
-                      </div>
+                <div className="relative">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center shadow-lg shadow-green-200">
+                      <Phone className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900">الواتساب</h2>
+                      <p className="text-[11px] text-gray-400 font-bold">الرقم الرئيسي لاستقبال الطلبات.</p>
                     </div>
                   </div>
 
-                  {/* WhatsApp Number */}
-                  <div className="p-6 bg-gray-50 border border-gray-200 rounded-2xl shadow-sm">
-                    <h3 className="text-lg font-bold text-black mb-1">رقم الواتساب الرئيسي</h3>
-                    <p className="text-sm text-gray-500 mb-4 font-medium">الرقم الذي سيتم توجيه جميع الطلبات المباشرة إليه. (مع مفتاح الدولة، مثال: 96477...)</p>
-                    <div className="flex border border-gray-300 rounded-xl bg-white overflow-hidden shadow-inner focus-within:border-black transition">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={settings.whatsapp_number || ""}
+                      onChange={(e) => setSettings({...settings, whatsapp_number: e.target.value})}
+                      placeholder="96477..."
+                      dir="ltr"
+                      className="w-full p-4 md:p-5 bg-gray-50 border-2 border-transparent focus:border-black focus:bg-white rounded-2xl text-lg md:text-2xl font-black text-center tracking-wider transition-all outline-none"
+                    />
+                    <div className="absolute -bottom-6 left-0 right-0 text-center">
+                      <span className="text-[9px] text-gray-400 font-bold bg-white px-3 py-1 rounded-full border border-gray-100">أدخل الرقم بدون علامة +</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card: Global Bundle Rule */}
+              <div className="bg-gray-900 p-6 md:p-10 rounded-[32px] shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                        <Zap className="w-6 h-6 text-yellow-400" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-black text-white">نظام الخصم</h2>
+                        <p className="text-[11px] text-gray-400 font-bold">يطبق عند تجاوز عدد القطع.</p>
+                      </div>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${settings.bundle_amount > 0 ? "bg-green-500 border-green-500" : "border-white/20"}`}>
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">قيمة الخصم</label>
                       <input
-                        type="text"
-                        value={settings.whatsapp_number ?? ""}
-                        onChange={e => setSettings({ ...settings, whatsapp_number: e.target.value.replace(/[^0-9]/g, "") })}
-                        className="flex-1 p-4 outline-none font-mono text-lg tracking-widest text-center"
-                        placeholder=""
+                        type="number"
+                        value={settings.bundle_amount}
+                        onChange={(e) => setSettings({...settings, bundle_amount: e.target.value})}
+                        className="w-full p-4 bg-white/5 border border-white/10 focus:border-white/30 rounded-2xl text-lg font-black text-white text-center outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">عند شراء</label>
+                      <input
+                        type="number"
+                        value={settings.bundle_threshold}
+                        onChange={(e) => setSettings({...settings, bundle_threshold: e.target.value})}
+                        className="w-full p-4 bg-white/5 border border-white/10 focus:border-white/30 rounded-2xl text-lg font-black text-white text-center outline-none transition-all"
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
 
-                  {/* Marketing / Bundle Rule */}
-                  <div className="p-6 bg-gradient-to-br from-gray-900 to-black rounded-2xl shadow-xl text-white">
-                    <h3 className="text-lg font-black mb-1 flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-400" /> نظام الخصم الذكي التلقائي</h3>
-                    <p className="text-sm text-gray-400 mb-6 font-medium">حدد الشروط ليتم خصم المبلغ من الفاتورة النهائية بمجرد أن تتجاوز سلة الزبون العدد المطلوب.</p>
+            <div className="bg-white p-6 md:p-10 rounded-[32px] border border-gray-100 shadow-sm relative overflow-hidden">
+               <div className="relative z-10">
+                <h2 className="text-2xl font-black mb-8 flex items-center gap-3"><Settings className="w-7 h-7" /> هوية المتجر (العلامة البيضاء)</h2>
 
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">قيمة الخصم الثابت (د.ع)</label>
-                        <input type="number" min="0" value={settings.bundle_amount ?? ""} onChange={e => setSettings({ ...settings, bundle_amount: e.target.value })} className="w-full p-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-500 outline-none focus:bg-white/20 font-bold transition" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">كم قطعة مطلوبة لتفعيل الخصم؟</label>
-                        <div className="flex items-center gap-3 bg-white/10 p-2 rounded-xl border border-white/20">
-                          <input type="number" min="2" value={settings.bundle_threshold ?? ""} onChange={e => setSettings({ ...settings, bundle_threshold: e.target.value })} className="w-16 p-2 rounded-lg bg-white/20 text-white outline-none text-center font-bold" />
-                          <span className="font-bold">قطع أو أكثر</span>
-                        </div>
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">اسم المتجر</label>
+                      <input type="text" value={settings.store_name} onChange={e => setSettings({ ...settings, store_name: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">وصف قصير (Bio)</label>
+                      <input type="text" placeholder="مثال: أرقى وأفضل التصاميم..." value={settings.store_bio} onChange={e => setSettings({ ...settings, store_bio: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none bg-gray-50 focus:bg-white transition" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">اللون الأساسي</label>
+                      <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-200">
+                        <input type="color" value={settings.primary_color} onChange={e => setSettings({ ...settings, primary_color: e.target.value })} className="h-10 w-10 rounded-lg cursor-pointer border-0 p-0" />
+                        <span className="text-[10px] font-mono font-bold text-gray-400 truncate">{settings.primary_color}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Categories Management */}
-                  <div className="p-6 border border-gray-200 rounded-2xl shadow-sm">
-                    <h3 className="text-lg font-bold text-black mb-1">إدارة الأقسام (التصنيفات)</h3>
-                    <p className="text-sm text-gray-500 mb-6 font-medium">أضف واحذف الأقسام التي تظهر كفلاتر للزبون وعند إضافة منتج جديد.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-3">صورة الشعار (Logo)</label>
+                      <div className="flex items-center gap-4">
+                        <label className="flex-1 flex flex-col items-center justify-center p-6 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-black transition">
+                          <UploadCloud className="w-6 h-6 text-gray-400 mb-2" />
+                          <span className="text-[10px] text-gray-400 font-bold">رفع كعار جديد</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={e => setLogoFile(e.target.files[0])} />
+                        </label>
+                        {(logoFile || settings.store_logo) && (
+                          <div className="w-24 h-24 rounded-2xl border border-gray-100 p-2 bg-white flex items-center justify-center overflow-hidden">
+                            <img src={logoFile ? URL.createObjectURL(logoFile) : settings.store_logo} className="w-full h-full object-contain" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-3">صورة الغلاف (Cover)</label>
+                      <div className="flex flex-col gap-4">
+                        <label className="flex flex-col items-center justify-center p-6 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-black transition">
+                          <UploadCloud className="w-6 h-6 text-gray-400 mb-2" />
+                          <span className="text-[10px] text-gray-400 font-bold">رفع غلاف جديد</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={e => setCoverFile(e.target.files[0])} />
+                        </label>
+                        {(coverFile || settings.store_cover) && (
+                          <img src={coverFile ? URL.createObjectURL(coverFile) : settings.store_cover} className="w-full h-24 object-cover rounded-2xl border border-gray-100" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
+                  <div className="pt-8 border-t border-gray-50">
+                    <h3 className="text-lg font-bold text-black mb-4">إدارة الأقسام (التصنيفات)</h3>
                     <div className="flex flex-wrap gap-2 mb-6 min-h-[50px]">
                       {settings.categories.map(cat => (
-                        <span key={cat} className="bg-gray-100 border border-gray-200 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 group cursor-default shadow-sm">
+                        <span key={cat} className="bg-gray-50 border border-gray-200 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 group cursor-default">
                           {cat}
-                          <button onClick={() => removeCategory(cat)} className="w-5 h-5 bg-white text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full flex items-center justify-center transition shadow-sm border border-gray-200">
+                          <button onClick={() => removeCategory(cat)} className="w-5 h-5 bg-white text-gray-300 hover:text-red-500 rounded-full flex items-center justify-center transition shadow-sm border border-gray-100">
                             <X className="w-3 h-3" />
                           </button>
                         </span>
                       ))}
                     </div>
-
                     <div className="flex gap-2">
                       <input
                         type="text"

@@ -14,7 +14,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl" className={`${tajawal.variable} antialiased`}>
+    <html lang="ar" dir="rtl" className={`${tajawal.variable} antialiased`} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col font-sans">
         {children}
       </body>
