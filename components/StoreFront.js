@@ -314,7 +314,7 @@ export default function StoreFront() {
         {/* Avatar with Halo effect */}
         <div className="relative mb-3 sm:mb-4 group">
           <div className="absolute inset-0 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity duration-500" style={{ backgroundColor: settings.primary_color || '#000' }}></div>
-          <div className="relative w-24 h-24 sm:w-36 sm:h-36 rounded-3xl border border-white bg-white shadow-2xl overflow-hidden flex items-center justify-center z-10 transition-transform duration-500 hover:scale-105 rotate-3 hover:rotate-0">
+          <div className="relative w-24 h-24 sm:w-36 sm:h-36 rounded-full border-4 border-white bg-white shadow-2xl overflow-hidden flex items-center justify-center z-10 transition-transform duration-500 hover:scale-105">
             {settings.store_logo ? (
               <img src={settings.store_logo} alt={settings.store_name} className="w-full h-full object-cover select-none" />
             ) : (
