@@ -974,8 +974,13 @@ export default function AdminDashboard() {
                   };
                   const st = statusMap[order.status] || statusMap.pending;
                   const timeAgo = (() => {
-                    const diff = Date.now() - new Date(order.created_at).getTime();
-                    const mins = Math.floor(diff / 60000);
+                    // Force UTC: Supabase returns ISO strings sometimes without 'Z'
+                    const raw = order.created_at;
+                    const utcStr = raw && !raw.endsWith('Z') && !raw.includes('+') ? raw + 'Z' : raw;
+                    const diff = Math.max(0, Date.now() - new Date(utcStr).getTime());
+                    const secs = Math.floor(diff / 1000);
+                    if (secs < 60) return 'الآن';
+                    const mins = Math.floor(secs / 60);
                     if (mins < 60) return `منذ ${mins} دقيقة`;
                     const hrs = Math.floor(mins / 60);
                     if (hrs < 24) return `منذ ${hrs} ساعة`;
