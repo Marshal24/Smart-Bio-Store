@@ -30,11 +30,14 @@ export default function StoreFront() {
   // Cart & Checkout State
   const [cart, setCart] = useState([]);
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerDistrict, setCustomerDistrict] = useState("");
   const [governorate, setGovernorate] = useState("Kirkuk");
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoError, setPromoError] = useState("");
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const GOVERNORATES = [
@@ -253,45 +256,77 @@ export default function StoreFront() {
   const promoDiscount = appliedPromo ? appliedPromo.discount_value : 0;
   const grandTotal = subtotal + deliveryFee - bundleDiscount - promoDiscount;
 
-  const handleWhatsAppCheckout = () => {
+  const handleWhatsAppCheckout = async () => {
+    if (!customerName.trim()) { alert("يرجى إدخال اسمك الكامل"); return; }
+    if (!customerPhone.trim()) { alert("يرجى إدخال رقم الواتساب"); return; }
+    setCheckoutLoading(true);
+
     const storeName = settings.store_name || "Boutique";
     const safeTotal = Math.max(0, grandTotal);
 
-    // Each item includes image URL so the owner can tap it and identify the exact product
-    let itemsText = cart.map((item, idx) => {
-      const colorText = item.selectedColor ? `%0A   اللون: ${item.selectedColor}` : "";
-      const priceText = `%0A   سعر القطعة: ${Number(item.price).toLocaleString()} د.ع`;
-      const imageText = item.displayImage ? `%0A   صورة المنتج: ${item.displayImage}` : "";
-      return `📦 طلب (${idx + 1}):%0A   المنتج: ${item.name}${colorText}%0A   المقاس: ${item.selectedSize}%0A   الكمية: ${item.quantity}${priceText}${imageText}`;
-    }).join("%0A%0A");
+    // 1. Build order payload for Supabase
+    const orderPayload = {
+      customer_name:   customerName.trim(),
+      customer_phone:  customerPhone.trim(),
+      governorate,
+      district:        customerDistrict.trim() || null,
+      items: cart.map(item => ({
+        name:         item.name,
+        price:        item.price,
+        size:         item.selectedSize,
+        color:        item.selectedColor || "",
+        quantity:     item.quantity,
+        displayImage: item.displayImage || item.image_url || ""
+      })),
+      subtotal,
+      delivery_fee:    deliveryFee,
+      bundle_discount: bundleDiscount,
+      promo_discount:  promoDiscount,
+      total:           safeTotal,
+      status:          "pending"
+    };
 
-    const nameText = customerName.trim() ? `👤 المشتري: ${customerName.trim()}%0A` : "";
+    // 2. Save to Supabase (non-blocking — if fails, still open WhatsApp)
+    let orderRef = "----";
+    try {
+      const { data: saved, error } = await supabase
+        .from("orders")
+        .insert(orderPayload)
+        .select("id")
+        .single();
+      if (!error && saved?.id) {
+        orderRef = saved.id.slice(-6).toUpperCase();
+      }
+    } catch (e) {
+      console.error("Order save error:", e);
+    }
 
-    const summaryLines = [
-      `🚚 التوصيل إلى ${governorate}: ${deliveryFee.toLocaleString()} د.ع`,
-      bundleDiscount > 0 ? `🎁 خصم العرض: -${bundleDiscount.toLocaleString()} د.ع` : null,
-      promoDiscount  > 0 ? `🎫 خصم كود: -${promoDiscount.toLocaleString()} د.ع`   : null,
-      `💰 المجموع الكلي: ${safeTotal.toLocaleString()} د.ع`,
-    ].filter(Boolean).join("%0A");
-
-    const divider = "────────────────────";
+    // 3. Short WhatsApp notification to store owner
+    const locationLine = customerDistrict.trim()
+      ? `${governorate} - ${customerDistrict.trim()}`
+      : governorate;
 
     const message =
-      `🛒 طلب جديد من متجر ${storeName}%0A` +
-      `${divider}%0A` +
-      `${nameText}` +
-      `%0A${itemsText}%0A%0A` +
-      `${divider}%0A` +
-      `${summaryLines}%0A%0A` +
-      `📍 سيتم إرسال العنوان بعد تأكيد الطلب.`;
+      `%F0%9F%9B%92 %D8%B7%D9%84%D8%A8 %D8%AC%D8%AF%D9%8A%D8%AF %D9%85%D9%86 ${storeName}%0A` +
+      `%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%0A` +
+      `%F0%9F%93%8B %D8%B1%D9%82%D9%85 %D8%A7%D9%84%D8%B7%D9%84%D8%A8: %23${orderRef}%0A` +
+      `%F0%9F%91%A4 ${customerName.trim()}%0A` +
+      `%F0%9F%93%9E ${customerPhone.trim()}%0A` +
+      `%F0%9F%93%8D ${locationLine}%0A` +
+      `%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%0A` +
+      `%F0%9F%92%B0 %D8%A7%D9%84%D9%85%D8%AC%D9%85%D9%88%D8%B9: ${safeTotal.toLocaleString()} %D8%AF.%D8%B9%0A%0A` +
+      `%E2%9C%85 %D8%AA%D9%85 %D8%AD%D9%81%D8%B8 %D8%A7%D9%84%D8%B7%D9%84%D8%A8. %D8%B1%D8%A7%D8%AC%D8%B9 %D9%84%D9%88%D8%AD%D8%A9 %D8%A7%D9%84%D8%B7%D9%84%D8%A8%D8%A7%D8%AA %D9%84%D9%84%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84 %D8%A7%D9%84%D9%83%D8%A7%D9%85%D9%84%D8%A9.`;
 
     window.open(`https://wa.me/${settings.whatsapp_number}?text=${message}`, "_blank");
 
     setTimeout(() => {
       setCart([]);
       setCustomerName("");
+      setCustomerPhone("");
+      setCustomerDistrict("");
       setCheckoutModalOpen(false);
-    }, 1000);
+      setCheckoutLoading(false);
+    }, 800);
   };
 
   if (loading) {
@@ -692,10 +727,13 @@ export default function StoreFront() {
                     <div className="space-y-6">
                       {/* Form Details */}
                       <div className="grid grid-cols-1 gap-5">
+                        {/* Name */}
                         <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">الاسم الكامل للزبون</label>
-                          <input 
-                            type="text" 
+                          <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">
+                            الاسم الكامل <span className="text-red-400 text-xs">*</span>
+                          </label>
+                          <input
+                            type="text"
                             value={customerName}
                             onChange={e => setCustomerName(e.target.value)}
                             placeholder="أدخل اسمك الكامل"
@@ -703,22 +741,55 @@ export default function StoreFront() {
                           />
                         </div>
 
+                        {/* Phone */}
                         <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">مدينة التوصيل</label>
+                          <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">
+                            رقم الواتساب <span className="text-red-400 text-xs">*</span>
+                          </label>
+                          <input
+                            type="tel"
+                            dir="ltr"
+                            value={customerPhone}
+                            onChange={e => setCustomerPhone(e.target.value)}
+                            placeholder="07xxxxxxxxx"
+                            className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm text-left"
+                          />
+                        </div>
+
+                        {/* Governorate */}
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">
+                            مدينة التوصيل <span className="text-red-400 text-xs">*</span>
+                          </label>
                           <div className="relative">
                             <select
                               value={governorate}
                               onChange={(e) => setGovernorate(e.target.value)}
                               className="w-full p-4 bg-white rounded-2xl border border-gray-100 outline-none focus:border-black appearance-none font-bold transition-all shadow-sm pr-10"
                             >
-                              {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov} ({gov === "كركوك" || gov === "Kirkuk" ? "3,000" : "5,000"} د.ع)</option>)}
+                              {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov} ({gov === "Kirkuk" ? "3,000" : "5,000"} د.ع)</option>)}
                             </select>
                             <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                           </div>
                         </div>
 
+                        {/* District (optional) */}
                         <div className="space-y-2">
-                           <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">رمز الخصم (إن وجد)</label>
+                          <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">
+                            الحي / المنطقة <span className="text-[9px] text-gray-300 font-medium normal-case">(اختياري — يسهّل التوصيل)</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={customerDistrict}
+                            onChange={e => setCustomerDistrict(e.target.value)}
+                            placeholder="مثال: حي الجهاد، الكرخ"
+                            className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
+                          />
+                        </div>
+
+                        {/* Promo */}
+                        <div className="space-y-2">
+                           <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">رمز الخصم (إن وجد)</label>
                            <div className="flex gap-2">
                              <input
                                type="text"
@@ -773,9 +844,12 @@ export default function StoreFront() {
 
                     <button
                       onClick={handleWhatsAppCheckout}
-                      className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-5 rounded-[24px] font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl shadow-green-500/20 active:scale-[0.98]"
+                      disabled={checkoutLoading}
+                      className="w-full bg-[#25D366] hover:bg-[#20bd5a] disabled:opacity-60 text-white py-5 rounded-[24px] font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl shadow-green-500/20 active:scale-[0.98]"
                     >
-                      <MessageCircle className="w-6 h-6" /> إكمال الطلب الآن
+                      {checkoutLoading
+                        ? <span>⏳ جاري إرسال الطلب...</span>
+                        : <><MessageCircle className="w-6 h-6" /> تأكيد الطلب عبر واتساب</>}
                     </button>
                   </>
                 )}

@@ -16,7 +16,7 @@ const SIZE_TEMPLATES = {
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  const [activeTab, setActiveTab] = useState("products"); // products, promos, settings
+  const [activeTab, setActiveTab] = useState("products"); // products, orders, promos, settings
 
   // Toast Notification System
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
@@ -67,6 +67,10 @@ export default function AdminDashboard() {
   // Promos State
   const [newPromo, setNewPromo] = useState({ code: "", discount_value: "", is_active: true, expires_at: "" });
 
+  // Orders State
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchProducts();
@@ -113,6 +117,33 @@ export default function AdminDashboard() {
       showToast(`خطأ جلب الخصومات: ${error.message}`, "error");
     }
     if (data) setPromoCodes(data);
+  };
+
+  const fetchOrders = async () => {
+    setOrdersLoading(true);
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Fetch orders error:", error);
+      showToast(`خطأ جلب الطلبات: ${error.message}`, "error");
+    }
+    if (data) setOrders(data);
+    setOrdersLoading(false);
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: newStatus })
+      .eq("id", orderId);
+    if (error) {
+      showToast("خطأ في تحديث حالة الطلب", "error");
+    } else {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      showToast("تم تحديث حالة الطلب ✨");
+    }
   };
 
   // --- Settings Logic ---
@@ -760,6 +791,14 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab("products")} className={`whitespace-nowrap flex-1 px-5 sm:px-8 py-3 rounded-xl font-bold transition-all text-xs sm:text-sm ${activeTab === 'products' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
             إدارة المنتجات
           </button>
+          <button onClick={() => { setActiveTab("orders"); fetchOrders(); }} className={`whitespace-nowrap flex-1 px-5 sm:px-8 py-3 rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center justify-center gap-2 ${activeTab === 'orders' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
+            📦 الطلبات
+            {orders.filter(o => o.status === 'pending').length > 0 && (
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${activeTab === 'orders' ? 'bg-white text-black' : 'bg-red-500 text-white'}`}>
+                {orders.filter(o => o.status === 'pending').length}
+              </span>
+            )}
+          </button>
           <button onClick={() => setActiveTab("promos")} className={`whitespace-nowrap flex-1 px-5 sm:px-8 py-3 rounded-xl font-bold transition-all text-xs sm:text-sm ${activeTab === 'promos' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
             العروض والخصومات
           </button>
@@ -853,6 +892,139 @@ export default function AdminDashboard() {
                 </div>
                 <h3 className="font-black text-2xl text-gray-900 mb-2">المخزون فارغ تماماً</h3>
                 <p className="text-gray-500 font-medium">ابدأ الآن ببناء إمبراطوريتك وأضف أول مجموعة أزياء.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- TAB: ORDERS --- */}
+        {activeTab === "orders" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-black text-gray-900">لوحة الطلبات</h2>
+                <p className="text-xs text-gray-400 font-bold mt-0.5">
+                  {orders.length} طلب إجمالي &bull; {orders.filter(o => o.status === 'pending').length} بانتظار
+                </p>
+              </div>
+              <button onClick={fetchOrders} disabled={ordersLoading} className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition active:scale-95 shadow-sm">
+                {ordersLoading ? "جاري..." : "🔄 تحديث"}
+              </button>
+            </div>
+
+            {ordersLoading ? (
+              <div className="flex justify-center items-center py-24 text-gray-400 font-bold">جاري تحميل الطلبات...</div>
+            ) : orders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-4">
+                <div className="w-20 h-20 bg-gray-100 rounded-3xl flex items-center justify-center text-4xl">📦</div>
+                <p className="font-black text-lg text-gray-600">لا توجد طلبات حتى الآن</p>
+                <p className="text-xs font-bold text-gray-400">عندما يرسل زبون طلباً سيظهر هنا مباشرة</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map(order => {
+                  const items = order.items || [];
+                  const statusMap = {
+                    pending:   { label: "بانتظار", color: "bg-amber-100 text-amber-700 border-amber-200" },
+                    confirmed: { label: "مؤكد",    color: "bg-blue-100 text-blue-700 border-blue-200" },
+                    delivered: { label: "تم التوصيل ✅", color: "bg-green-100 text-green-700 border-green-200" },
+                    cancelled: { label: "ملغي ❌",  color: "bg-red-100 text-red-600 border-red-200" },
+                  };
+                  const st = statusMap[order.status] || statusMap.pending;
+                  const timeAgo = (() => {
+                    const diff = Date.now() - new Date(order.created_at).getTime();
+                    const mins = Math.floor(diff / 60000);
+                    if (mins < 60) return `منذ ${mins} دقيقة`;
+                    const hrs = Math.floor(mins / 60);
+                    if (hrs < 24) return `منذ ${hrs} ساعة`;
+                    return `منذ ${Math.floor(hrs / 24)} يوم`;
+                  })();
+
+                  const waMsg = encodeURIComponent(
+                    `مرحباً ${order.customer_name} 👋\n` +
+                    `تم تأكيد طلبك رقم #${order.id.slice(-6).toUpperCase()} ✅\n\n` +
+                    `📦 طلبك:\n` +
+                    items.map(it => `• ${it.name}${it.color ? ` | ${it.color}` : ''} | مقاس ${it.size} | ×${it.quantity}`).join('\n') +
+                    `\n\n💰 المجموع: ${Number(order.total).toLocaleString()} د.ع\n\n` +
+                    `📍 يرجى إرسال عنوانك الكامل أو موقعك لإتمام التوصيل.`
+                  );
+
+                  return (
+                    <div key={order.id} className={`bg-white rounded-3xl border shadow-sm p-5 transition-all ${order.status === 'pending' ? 'border-amber-200 shadow-amber-50' : order.status === 'cancelled' ? 'border-gray-100 opacity-60' : 'border-gray-100'}`}>
+
+                      {/* Order Header */}
+                      <div className="flex justify-between items-start mb-4 gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-2">
+                            <span className={`text-[11px] font-black px-3 py-1 rounded-full border ${st.color}`}>{st.label}</span>
+                            <span className="text-[11px] text-gray-400 font-bold">{timeAgo}</span>
+                            <span className="text-[10px] text-gray-300 font-mono">#{order.id.slice(-6).toUpperCase()}</span>
+                          </div>
+                          <p className="font-black text-gray-900">{order.customer_name}</p>
+                          <p className="text-sm text-gray-500 font-bold">
+                            {order.governorate}{order.district ? ` — ${order.district}` : ''}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xl font-black text-gray-900">{Number(order.total).toLocaleString()}</p>
+                          <p className="text-xs text-gray-400 font-bold">دينار عراقي</p>
+                        </div>
+                      </div>
+
+                      {/* Items with product images */}
+                      <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
+                        {items.map((item, idx) => (
+                          <div key={idx} className="flex-shrink-0 w-20 bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
+                            {item.displayImage
+                              ? <img src={item.displayImage} alt="" className="w-full h-24 object-cover" />
+                              : <div className="w-full h-24 flex items-center justify-center text-3xl">👕</div>}
+                            <div className="p-1.5 space-y-0.5">
+                              <p className="text-[9px] font-black text-gray-700 truncate leading-tight">{item.name}</p>
+                              <p className="text-[9px] text-gray-400 font-bold">{item.size}{item.color ? ` · ${item.color}` : ''}</p>
+                              <p className="text-[9px] font-black text-gray-800">×{item.quantity} · {Number(item.price * item.quantity).toLocaleString()} د.ع</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Price breakdown */}
+                      <div className="text-xs text-gray-400 font-bold flex flex-wrap gap-x-4 gap-y-1 mb-4 border-t border-gray-50 pt-3">
+                        <span>مشتريات: {Number(order.subtotal).toLocaleString()} د.ع</span>
+                        <span>توصيل: {Number(order.delivery_fee).toLocaleString()} د.ع</span>
+                        {order.bundle_discount > 0 && <span className="text-green-500">خصم عرض: -{Number(order.bundle_discount).toLocaleString()}</span>}
+                        {order.promo_discount  > 0 && <span className="text-blue-500">خصم كود: -{Number(order.promo_discount).toLocaleString()}</span>}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 flex-wrap">
+                        <a
+                          href={`https://wa.me/${order.customer_phone}?text=${waMsg}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 bg-[#25D366] text-white px-4 py-2.5 rounded-xl font-black text-xs hover:bg-[#1fb855] transition active:scale-95 shadow-sm"
+                        >
+                          <Phone className="w-3.5 h-3.5" /> واتساب — {order.customer_phone}
+                        </a>
+
+                        {order.status === 'pending' && (
+                          <button onClick={() => updateOrderStatus(order.id, 'confirmed')} className="bg-blue-500 text-white px-4 py-2.5 rounded-xl font-black text-xs hover:bg-blue-600 transition active:scale-95">
+                            ✔ تأكيد
+                          </button>
+                        )}
+                        {order.status === 'confirmed' && (
+                          <button onClick={() => updateOrderStatus(order.id, 'delivered')} className="bg-green-500 text-white px-4 py-2.5 rounded-xl font-black text-xs hover:bg-green-600 transition active:scale-95">
+                            🚚 تم التوصيل
+                          </button>
+                        )}
+                        {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                          <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 px-4 py-2.5 rounded-xl font-black text-xs transition active:scale-95">
+                            ✕ إلغاء
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
