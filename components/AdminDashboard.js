@@ -156,6 +156,31 @@ export default function AdminDashboard() {
     }
   };
 
+  const deleteOrder = async (orderId) => {
+    const { error } = await supabase.from("orders").delete().eq("id", orderId);
+    if (error) {
+      showToast("خطأ في حذف الطلب", "error");
+    } else {
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+      showToast("تم حذف الطلب");
+    }
+  };
+
+  const deleteCompleted = async () => {
+    if (!window.confirm("هل تريد حذف جميع الطلبات المنتهية والملغاة؟")) return;
+    const { error } = await supabase
+      .from("orders")
+      .delete()
+      .in("status", ["delivered", "cancelled"]);
+    if (error) {
+      showToast("خطأ في الحذف الجماعي", "error");
+    } else {
+      setOrders(prev => prev.filter(o => o.status !== "delivered" && o.status !== "cancelled"));
+      showToast("تم حذف الطلبات المنتهية ✨");
+    }
+  };
+
+
   // --- Settings Logic ---
   const saveSettings = async () => {
     setLoading(true);
@@ -910,23 +935,30 @@ export default function AdminDashboard() {
         {/* --- TAB: ORDERS --- */}
         {activeTab === "orders" && (
           <div>
-            <div className="flex justify-between items-center mb-6">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
               <div>
                 <h2 className="text-xl font-black text-gray-900">لوحة الطلبات</h2>
                 <p className="text-xs text-gray-400 font-bold mt-0.5">
-                  {orders.length} طلب إجمالي &bull; {orders.filter(o => o.status === 'pending').length} بانتظار
+                  {orders.length} طلب &bull; {orders.filter(o => o.status === 'pending').length} بانتظار
                 </p>
               </div>
-              <button onClick={fetchOrders} disabled={ordersLoading} className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition active:scale-95 shadow-sm">
-                {ordersLoading ? "جاري..." : "🔄 تحديث"}
-              </button>
+              <div className="flex gap-2">
+                {orders.some(o => o.status === 'delivered' || o.status === 'cancelled') && (
+                  <button onClick={deleteCompleted} className="flex items-center gap-1.5 bg-red-50 text-red-500 border border-red-100 px-4 py-2.5 rounded-xl text-xs font-black hover:bg-red-100 transition active:scale-95">
+                    <Trash2 className="w-3.5 h-3.5" /> حذف المنتهية
+                  </button>
+                )}
+                <button onClick={fetchOrders} disabled={ordersLoading} className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition active:scale-95 shadow-sm">
+                  {ordersLoading ? "جاري..." : "تحديث"}
+                </button>
+              </div>
             </div>
 
             {ordersLoading ? (
               <div className="flex justify-center items-center py-24 text-gray-400 font-bold">جاري تحميل الطلبات...</div>
             ) : orders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-4">
-                <div className="w-20 h-20 bg-gray-100 rounded-3xl flex items-center justify-center text-4xl">📦</div>
+              <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
                 <p className="font-black text-lg text-gray-600">لا توجد طلبات حتى الآن</p>
                 <p className="text-xs font-bold text-gray-400">عندما يرسل زبون طلباً سيظهر هنا مباشرة</p>
               </div>
@@ -935,10 +967,10 @@ export default function AdminDashboard() {
                 {orders.map(order => {
                   const items = order.items || [];
                   const statusMap = {
-                    pending:   { label: "بانتظار", color: "bg-amber-100 text-amber-700 border-amber-200" },
-                    confirmed: { label: "مؤكد",    color: "bg-blue-100 text-blue-700 border-blue-200" },
-                    delivered: { label: "تم التوصيل ✅", color: "bg-green-100 text-green-700 border-green-200" },
-                    cancelled: { label: "ملغي ❌",  color: "bg-red-100 text-red-600 border-red-200" },
+                    pending:   { label: "بانتظار",        color: "bg-amber-100 text-amber-700 border-amber-200" },
+                    confirmed: { label: "مؤكد",           color: "bg-blue-100 text-blue-700 border-blue-200" },
+                    delivered: { label: "تم التوصيل",     color: "bg-green-100 text-green-700 border-green-200" },
+                    cancelled: { label: "ملغي",           color: "bg-red-100 text-red-600 border-red-200" },
                   };
                   const st = statusMap[order.status] || statusMap.pending;
                   const timeAgo = (() => {
@@ -951,12 +983,12 @@ export default function AdminDashboard() {
                   })();
 
                   const waMsg = encodeURIComponent(
-                    `مرحباً ${order.customer_name} 👋\n` +
-                    `تم تأكيد طلبك رقم #${order.id.slice(-6).toUpperCase()} ✅\n\n` +
-                    `📦 طلبك:\n` +
-                    items.map(it => `• ${it.name}${it.color ? ` | ${it.color}` : ''} | مقاس ${it.size} | ×${it.quantity}`).join('\n') +
-                    `\n\n💰 المجموع: ${Number(order.total).toLocaleString()} د.ع\n\n` +
-                    `📍 يرجى إرسال عنوانك الكامل أو موقعك لإتمام التوصيل.`
+                    `مرحباً ${order.customer_name}\n` +
+                    `تم تأكيد طلبك رقم #${order.id.slice(-6).toUpperCase()}\n\n` +
+                    `طلبك:\n` +
+                    items.map(it => `- ${it.name}${it.color ? ` | ${it.color}` : ''} | مقاس ${it.size} | x${it.quantity}`).join('\n') +
+                    `\n\nالمجموع: ${Number(order.total).toLocaleString()} د.ع\n\n` +
+                    `يرجى إرسال عنوانك الكامل أو موقعك لإتمام التوصيل.`
                   );
 
                   return (
@@ -975,9 +1007,18 @@ export default function AdminDashboard() {
                             {order.governorate}{order.district ? ` — ${order.district}` : ''}
                           </p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xl font-black text-gray-900">{Number(order.total).toLocaleString()}</p>
-                          <p className="text-xs text-gray-400 font-bold">دينار عراقي</p>
+                        <div className="flex items-start gap-3">
+                          <div className="text-right">
+                            <p className="text-xl font-black text-gray-900">{Number(order.total).toLocaleString()}</p>
+                            <p className="text-xs text-gray-400 font-bold">دينار عراقي</p>
+                          </div>
+                          <button
+                            onClick={() => deleteOrder(order.id)}
+                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition mt-0.5"
+                            title="حذف الطلب"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
 
@@ -987,11 +1028,11 @@ export default function AdminDashboard() {
                           <div key={idx} className="flex-shrink-0 w-20 bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
                             {item.displayImage
                               ? <img src={item.displayImage} alt="" className="w-full h-24 object-cover" />
-                              : <div className="w-full h-24 flex items-center justify-center text-3xl">👕</div>}
+                              : <div className="w-full h-24 bg-gray-100 flex items-center justify-center text-[10px] text-gray-400 font-bold">بدون صورة</div>}
                             <div className="p-1.5 space-y-0.5">
                               <p className="text-[9px] font-black text-gray-700 truncate leading-tight">{item.name}</p>
                               <p className="text-[9px] text-gray-400 font-bold">{item.size}{item.color ? ` · ${item.color}` : ''}</p>
-                              <p className="text-[9px] font-black text-gray-800">×{item.quantity} · {Number(item.price * item.quantity).toLocaleString()} د.ع</p>
+                              <p className="text-[9px] font-black text-gray-800">x{item.quantity} · {Number(item.price * item.quantity).toLocaleString()} د.ع</p>
                             </div>
                           </div>
                         ))}
@@ -1018,17 +1059,17 @@ export default function AdminDashboard() {
 
                         {order.status === 'pending' && (
                           <button onClick={() => updateOrderStatus(order.id, 'confirmed')} className="bg-blue-500 text-white px-4 py-2.5 rounded-xl font-black text-xs hover:bg-blue-600 transition active:scale-95">
-                            ✔ تأكيد
+                            تأكيد
                           </button>
                         )}
                         {order.status === 'confirmed' && (
                           <button onClick={() => updateOrderStatus(order.id, 'delivered')} className="bg-green-500 text-white px-4 py-2.5 rounded-xl font-black text-xs hover:bg-green-600 transition active:scale-95">
-                            🚚 تم التوصيل
+                            تم التوصيل
                           </button>
                         )}
                         {order.status !== 'cancelled' && order.status !== 'delivered' && (
                           <button onClick={() => updateOrderStatus(order.id, 'cancelled')} className="bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 px-4 py-2.5 rounded-xl font-black text-xs transition active:scale-95">
-                            ✕ إلغاء
+                            إلغاء
                           </button>
                         )}
                       </div>
