@@ -250,82 +250,117 @@ export default function AdminDashboard() {
     setColorVariants(newArr);
   };
 
-  const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.7) => {
-    return new Promise((resolve, reject) => {
-      // If it's not an image, skip compression
-      if (!file.type.startsWith('image/')) return resolve(file);
-      
+  const compressImage = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.75) => {
+    return new Promise((resolve) => {
+      // Skip compression for non-images or files already small enough
+      if (!file.type.startsWith('image/') || file.size < 500 * 1024) {
+        return resolve(file);
+      }
+
       const reader = new FileReader();
       reader.readAsDataURL(file);
+
       reader.onload = (event) => {
         const img = new Image();
         img.src = event.target.result;
+
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
+          try {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
 
-          // Calculate new dimensions
-          if (width > height) {
-            if (width > maxWidth) {
-              height *= maxWidth / width;
-              width = maxWidth;
+            // Scale down proportionally
+            const ratio = Math.min(1, maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              console.warn('Canvas context unavailable, uploading original');
+              return resolve(file);
             }
-          } else {
-            if (height > maxHeight) {
-              width *= maxHeight / height;
-              height = maxHeight;
-            }
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob && blob.size > 0) {
+                  const baseName = file.name.replace(/\.[^/.]+$/, '');
+                  const compressed = new File([blob], `${baseName}.jpg`, {
+                    type: 'image/jpeg',
+                    lastModified: Date.now(),
+                  });
+                  console.log(`Compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressed.size / 1024).toFixed(0)}KB`);
+                  resolve(compressed);
+                } else {
+                  console.warn('canvas.toBlob returned null, uploading original');
+                  resolve(file);
+                }
+              },
+              'image/jpeg',
+              quality
+            );
+          } catch (err) {
+            console.warn('Compression failed, uploading original:', err.message);
+            resolve(file);
           }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                type: 'image/jpeg',
-                lastModified: Date.now(),
-              });
-              resolve(compressedFile);
-            } else {
-              resolve(file); // Fallback to original
-            }
-          }, 'image/jpeg', quality);
         };
-        img.onerror = (err) => resolve(file); // Fallback
+
+        img.onerror = () => {
+          console.warn('Image load error during compression, uploading original');
+          resolve(file);
+        };
       };
-      reader.onerror = (err) => resolve(file); // Fallback
+
+      reader.onerror = () => {
+        console.warn('FileReader error during compression, uploading original');
+        resolve(file);
+      };
     });
   };
 
   const uploadFileToSupabase = async (file) => {
-    try {
-      console.log(`Uploading file: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
-      
-      // Compress if it's an image
-      const processedFile = await compressImage(file);
-      console.log(`Processed file size: ${(processedFile.size / 1024).toFixed(2)} KB`);
-
-      const fileExt = processedFile.name.split('.').pop();
-      const fileName = `${Math.random()}-${Date.now()}.${fileExt}`;
-      
-      const { error } = await supabase.storage.from('products').upload(fileName, processedFile);
-      
-      if (error) {
-        console.error("Supabase storage error:", error);
-        throw error;
-      }
-      
-      const { data } = supabase.storage.from('products').getPublicUrl(fileName);
-      return data.publicUrl;
-    } catch (err) {
-      console.error("Upload process error:", err);
-      throw err;
+    // ── 1. Size guard (20 MB hard limit) ───────────────────────────────────
+    const MAX_BYTES = 20 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      throw new Error('حجم الملف كبير جداً (الحد الأقصى 20 ميجابايت). يرجى اختيار صورة أصغر.');
     }
+
+    // ── 2. Compress ─────────────────────────────────────────────────────────
+    const processed = await compressImage(file);
+    const mimeType = processed.type || 'image/jpeg';
+    const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    console.log(`Uploading → bucket:products / ${fileName} (${(processed.size / 1024).toFixed(0)} KB, ${mimeType})`);
+
+    // ── 3. Upload with explicit content-type ────────────────────────────────
+    const { error } = await supabase.storage
+      .from('products')
+      .upload(fileName, processed, {
+        contentType: mimeType,
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Supabase storage error:', JSON.stringify(error));
+      // Translate common Supabase errors to Arabic
+      if (error.message?.includes('Payload too large')) {
+        throw new Error('الصورة كبيرة جداً. يرجى تقليص حجمها وإعادة المحاولة.');
+      }
+      if (error.message?.includes('duplicate')) {
+        throw new Error('اسم الملف مكرر. يرجى المحاولة مجدداً.');
+      }
+      throw new Error(error.message || 'فشل رفع الصورة إلى التخزين.');
+    }
+
+    const { data } = supabase.storage.from('products').getPublicUrl(fileName);
+    return data.publicUrl;
   };
+
 
   const saveProduct = async (e) => {
     e.preventDefault();

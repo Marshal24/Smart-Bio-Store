@@ -40,12 +40,11 @@ export default function StoreFront() {
     "Diyala", "Maysan", "Muthanna", "Al Qadisiyyah", "Saladin", "Wasit", "Halabja"
   ];
 
-  const SIZES = ["S", "M", "L", "XL", "XXL"];
   const SIZE_TEMPLATES = {
-    ALPHA: ["S", "M", "L", "XL", "XXL", "XXXL"],
-    PANTS: ["28", "29", "30", "31", "32", "33", "34", "36", "38", "40"],
-    SHOES: ["37", "38", "39", "40", "41", "42", "43", "44", "45"],
-    KIDS: ["1", "2", "3", "4", "5", "6"]
+    ALPHA: { name: "ملابس (S, M, L...)", values: ["S", "M", "L", "XL", "XXL", "XXXL"] },
+    PANTS: { name: "سراويل (28, 30, 32...)", values: ["28", "29", "30", "31", "32", "33", "34", "36", "38", "40"] },
+    SHOES: { name: "أحذية (37, 38, 39...)", values: ["37", "38", "39", "40", "41", "42", "43", "44", "45"] },
+    KIDS: { name: "أطفال (1, 2, 3...)", values: ["1", "2", "3", "4", "5", "6"] }
   };
 
   useEffect(() => {
@@ -126,7 +125,7 @@ export default function StoreFront() {
     
     // Auto-select first available SIZE
     const sizeType = product.variants?.size_type || 'ALPHA';
-    const template = SIZE_TEMPLATES[sizeType] || SIZE_TEMPLATES.ALPHA;
+    const template = (SIZE_TEMPLATES[sizeType] || SIZE_TEMPLATES.ALPHA).values;
     const productSizes = product.variants?.sizes || product.variants || {};
     
     const firstAvailableSize = template.find(size => productSizes[size] !== false);
@@ -167,7 +166,7 @@ export default function StoreFront() {
 
     // If the current selected size is not available for this new color, auto-select first valid one.
     const sizeType = selectedProduct.variants?.size_type || 'ALPHA';
-    const template = SIZE_TEMPLATES[sizeType] || SIZE_TEMPLATES.ALPHA;
+    const template = (SIZE_TEMPLATES[sizeType] || SIZE_TEMPLATES.ALPHA).values;
     const colorSizes = (colorObj && typeof colorObj !== "string" && colorObj.sizes)
       ? colorObj.sizes
       : (selectedProduct.variants?.sizes || selectedProduct.variants || {});
@@ -535,7 +534,7 @@ export default function StoreFront() {
                   <div className="mb-8">
                     <h3 className="text-sm font-bold text-gray-900 mb-4 inline-block tracking-wide">الخطوة 2: تحديد المقاس</h3>
                     <div className="flex flex-wrap gap-2.5">
-                      {(SIZE_TEMPLATES[selectedProduct.variants?.size_type] || SIZE_TEMPLATES.ALPHA).map(size => {
+                      {(SIZE_TEMPLATES[selectedProduct.variants?.size_type] || SIZE_TEMPLATES.ALPHA).values.map(size => {
                         const currentSource = (selectedColor && typeof selectedColor !== "string" && selectedColor.sizes)
                           ? selectedColor.sizes
                           : (selectedProduct.variants?.sizes || selectedProduct.variants || {});
