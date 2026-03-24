@@ -570,15 +570,21 @@ export default function AdminDashboard() {
                   {/* Main Image */}
                   <div className="shrink-0 w-full sm:w-32">
                     <label className="block text-sm font-bold text-gray-700 mb-2">الصورة الرئيسية</label>
-                    <label className="relative flex flex-col items-center justify-center w-full aspect-[3/4] sm:aspect-square bg-white border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-black transition overflow-hidden">
+                    <label className="relative flex flex-col items-center justify-center w-full aspect-square bg-white border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-black transition overflow-hidden">
                       {mainImageFile ? (
-                        <div className="absolute inset-0 p-2 break-all text-xs font-medium text-center flex items-center justify-center bg-gray-100">{mainImageFile.name}</div>
+                        <img src={URL.createObjectURL(mainImageFile)} className="w-full h-full object-cover" alt="Preview" />
                       ) : productForm.existingMainImage ? (
                         <img src={productForm.existingMainImage} className="w-full h-full object-cover" alt="Preview" />
                       ) : (
-                        <div className="flex flex-col items-center">
-                          <UploadCloud className="w-6 h-6 text-gray-400 mb-1" />
-                          <span className="text-[10px] text-gray-400 font-bold">رفع صورة</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <UploadCloud className="w-7 h-7 text-gray-300" />
+                          <span className="text-[10px] text-gray-400 font-bold">اختر صورة</span>
+                        </div>
+                      )}
+                      {/* Overlay tap hint when image exists */}
+                      {(mainImageFile || productForm.existingMainImage) && (
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-all flex items-center justify-center opacity-0 hover:opacity-100">
+                          <UploadCloud className="w-6 h-6 text-white" />
                         </div>
                       )}
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => setMainImageFile(e.target.files[0])} />
@@ -638,14 +644,23 @@ export default function AdminDashboard() {
                       {colorVariants.map((cv, index) => (
                         <div key={index} className="flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-3 border border-gray-200 rounded-xl relative group shadow-sm">
 
-                          {/* Color Image Upload */}
-                          <label className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center cursor-pointer overflow-hidden hover:border-black transition">
+                          {/* Color Image Upload — shows actual preview */}
+                          <label className="shrink-0 w-14 h-14 rounded-xl bg-gray-50 border-2 border-gray-200 flex items-center justify-center cursor-pointer overflow-hidden hover:border-black transition relative group">
                             {cv.file ? (
-                              <span className="text-[7px] font-bold break-all text-center px-0.5">{cv.file.name}</span>
+                              <img src={URL.createObjectURL(cv.file)} className="w-full h-full object-cover" alt="" />
                             ) : cv.existingUrl ? (
                               <img src={cv.existingUrl} className="w-full h-full object-cover" alt="color variant" />
                             ) : (
-                              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                              <div className="flex flex-col items-center gap-0.5">
+                                <ImageIcon className="w-5 h-5 text-gray-300" />
+                                <span className="text-[8px] text-gray-300 font-bold">صورة</span>
+                              </div>
+                            )}
+                            {/* Overlay for re-upload */}
+                            {(cv.file || cv.existingUrl) && (
+                              <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-all flex items-center justify-center opacity-0 hover:opacity-100">
+                                <UploadCloud className="w-4 h-4 text-white" />
+                              </div>
                             )}
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleColorImageUpload(index, e.target.files[0])} />
                           </label>
@@ -655,8 +670,8 @@ export default function AdminDashboard() {
                               const newArr = [...colorVariants]; newArr[index].name = e.target.value; setColorVariants(newArr);
                             }} className="w-full p-2 text-xs sm:text-sm rounded-lg bg-gray-50 border-none focus:ring-1 focus:ring-black outline-none font-bold truncate" />
 
-                            {/* NEW: Per-color Size Toggles (Dynamic) */}
-                            <div className="flex flex-wrap gap-1">
+                            {/* Per-color Size Toggles — flex-wrap for any template size */}
+                            <div className="flex flex-wrap gap-1 mt-1">
                               {SIZE_TEMPLATES[productForm.size_type].values.map(size => {
                                 const isActive = cv.sizes ? cv.sizes[size] !== false : productForm.sizes[size] !== false;
                                 return (
@@ -667,7 +682,9 @@ export default function AdminDashboard() {
                                       newArr[index].sizes = { ...currentSizes, [size]: !isActive };
                                       setColorVariants(newArr);
                                     }}
-                                    className={`px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black border transition-all ${isActive ? 'bg-black text-white border-black' : 'bg-white text-gray-200 border-gray-100 hover:border-gray-300'}`}
+                                    className={`px-2 py-1 rounded-lg text-[9px] font-black border transition-all active:scale-90 ${
+                                      isActive ? 'bg-black text-white border-black shadow-sm' : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300'
+                                    }`}
                                   >
                                     {size}
                                   </button>
@@ -683,16 +700,18 @@ export default function AdminDashboard() {
                   )}
                 </div>
 
-                {/* Legacy Quick Sizes Toggle for Creation/Edit Form */}
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-700">تفعيل/تعطيل المقاسات مبدئياً:</span>
-                  <div className="flex gap-2">
+                {/* Global Sizes Toggle - flex-wrap so PANTS / SHOES sizes never overflow */}
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                  <span className="text-sm font-bold text-gray-700 block mb-3">تفعيل/تعطيل المقاسات مبدئياً:</span>
+                  <div className="flex flex-wrap gap-2">
                     {SIZE_TEMPLATES[productForm.size_type].values.map(size => {
                       const isActive = productForm.sizes[size] !== false;
                       return (
                         <button key={size} type="button"
                           onClick={() => setProductForm({ ...productForm, sizes: { ...productForm.sizes, [size]: !isActive } })}
-                          className={`w-9 h-9 rounded-lg font-bold text-sm transition-all focus:scale-95 ${isActive ? 'bg-black text-white shadow-md' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                          className={`min-w-[40px] h-10 px-3 rounded-xl font-black text-sm transition-all active:scale-95 ${
+                            isActive ? 'bg-black text-white shadow-md' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                          }`}
                         >
                           {size}
                         </button>
