@@ -13,6 +13,16 @@ const SIZE_TEMPLATES = {
   KIDS: { name: "أطفال (1, 2, 3...)", values: ["1", "2", "3", "4", "5", "6"] }
 };
 
+// Convert any Iraqi phone format to international WhatsApp format
+// Examples: 07901234567 → 9647901234567 | +9647901234567 → 9647901234567
+const formatPhoneForWA = (phone) => {
+  let cleaned = (phone || '').replace(/\D/g, ''); // remove non-digits
+  if (cleaned.startsWith('00964')) cleaned = cleaned.slice(5);  // 00964...
+  else if (cleaned.startsWith('964'))  cleaned = cleaned.slice(3);  // 964...
+  if (cleaned.startsWith('0'))          cleaned = cleaned.slice(1);  // 07...
+  return '964' + cleaned; // always return 964XXXXXXXXX
+};
+
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
@@ -998,7 +1008,7 @@ export default function AdminDashboard() {
                       {/* Action buttons */}
                       <div className="flex gap-2 flex-wrap">
                         <a
-                          href={`https://wa.me/${order.customer_phone}?text=${waMsg}`}
+                          href={`https://wa.me/${formatPhoneForWA(order.customer_phone)}?text=${waMsg}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1.5 bg-[#25D366] text-white px-4 py-2.5 rounded-xl font-black text-xs hover:bg-[#1fb855] transition active:scale-95 shadow-sm"
