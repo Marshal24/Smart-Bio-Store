@@ -736,7 +736,7 @@ export default function StoreFront() {
                             type="text"
                             value={customerName}
                             onChange={e => setCustomerName(e.target.value)}
-                            placeholder="أدخل اسمك الكامل"
+                            placeholder=""
                             className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
                           />
                         </div>
@@ -751,7 +751,7 @@ export default function StoreFront() {
                             dir="ltr"
                             value={customerPhone}
                             onChange={e => setCustomerPhone(e.target.value)}
-                            placeholder="07xxxxxxxxx"
+                            placeholder=""
                             className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm text-left"
                           />
                         </div>
@@ -782,7 +782,7 @@ export default function StoreFront() {
                             type="text"
                             value={customerDistrict}
                             onChange={e => setCustomerDistrict(e.target.value)}
-                            placeholder="مثال: حي الجهاد، الكرخ"
+                            placeholder=""
                             className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
                           />
                         </div>
@@ -795,7 +795,7 @@ export default function StoreFront() {
                                type="text"
                                value={promoCode}
                                onChange={(e) => setPromoCode(e.target.value)}
-                               placeholder="رمز الخصم هنا"
+                               placeholder=""
                                className="flex-1 p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black uppercase text-center font-mono font-black transition-all placeholder:text-gray-200 shadow-sm"
                              />
                              <button onClick={verifyPromoCode} className="px-6 bg-black text-white rounded-2xl font-black text-xs hover:bg-gray-800 transition active:scale-95 shadow-lg shadow-black/10">تطبيق</button>
