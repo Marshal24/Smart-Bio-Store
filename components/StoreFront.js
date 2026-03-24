@@ -728,82 +728,60 @@ export default function StoreFront() {
                       {/* Form Details */}
                       <div className="grid grid-cols-1 gap-5">
                         {/* Name */}
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">
-                            الاسم الكامل <span className="text-red-400 text-xs">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={customerName}
-                            onChange={e => setCustomerName(e.target.value)}
-                            placeholder=""
-                            className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
-                          />
-                        </div>
+                        <input
+                          type="text"
+                          value={customerName}
+                          onChange={e => setCustomerName(e.target.value)}
+                          placeholder="الاسم الكامل"
+                          className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
+                        />
 
                         {/* Phone */}
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">
-                            رقم الواتساب <span className="text-red-400 text-xs">*</span>
-                          </label>
-                          <input
-                            type="tel"
-                            dir="ltr"
-                            value={customerPhone}
-                            onChange={e => setCustomerPhone(e.target.value)}
-                            placeholder=""
-                            className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm text-left"
-                          />
-                        </div>
+                        <input
+                          type="tel"
+                          dir="ltr"
+                          value={customerPhone}
+                          onChange={e => setCustomerPhone(e.target.value)}
+                          placeholder="رقم الواتساب"
+                          className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm text-left"
+                        />
 
                         {/* Governorate */}
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">
-                            مدينة التوصيل <span className="text-red-400 text-xs">*</span>
-                          </label>
-                          <div className="relative">
-                            <select
-                              value={governorate}
-                              onChange={(e) => setGovernorate(e.target.value)}
-                              className="w-full p-4 bg-white rounded-2xl border border-gray-100 outline-none focus:border-black appearance-none font-bold transition-all shadow-sm pr-10"
-                            >
-                              {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov} ({gov === "Kirkuk" ? "3,000" : "5,000"} د.ع)</option>)}
-                            </select>
-                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                          </div>
+                        <div className="relative">
+                          <select
+                            value={governorate}
+                            onChange={(e) => setGovernorate(e.target.value)}
+                            className="w-full p-4 bg-white rounded-2xl border border-gray-100 outline-none focus:border-black appearance-none font-bold transition-all shadow-sm pr-10"
+                          >
+                            {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov} ({gov === "Kirkuk" ? "3,000" : "5,000"} د.ع)</option>)}
+                          </select>
+                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
 
-                        {/* District (optional) */}
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">
-                            الحي / المنطقة <span className="text-[9px] text-gray-300 font-medium normal-case">(اختياري — يسهّل التوصيل)</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={customerDistrict}
-                            onChange={e => setCustomerDistrict(e.target.value)}
-                            placeholder=""
-                            className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
-                          />
-                        </div>
+                        {/* District */}
+                        <input
+                          type="text"
+                          value={customerDistrict}
+                          onChange={e => setCustomerDistrict(e.target.value)}
+                          placeholder="الحي أو المنطقة (اختياري)"
+                          className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
+                        />
 
                         {/* Promo */}
-                        <div className="space-y-2">
-                           <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">رمز الخصم (إن وجد)</label>
-                           <div className="flex gap-2">
-                             <input
-                               type="text"
-                               value={promoCode}
-                               onChange={(e) => setPromoCode(e.target.value)}
-                               placeholder=""
-                               className="flex-1 p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black uppercase text-center font-mono font-black transition-all placeholder:text-gray-200 shadow-sm"
-                             />
-                             <button onClick={verifyPromoCode} className="px-6 bg-black text-white rounded-2xl font-black text-xs hover:bg-gray-800 transition active:scale-95 shadow-lg shadow-black/10">تطبيق</button>
-                           </div>
-                           {promoError && <p className="text-[10px] text-red-500 font-bold mr-2 mt-1">{promoError}</p>}
-                           {appliedPromo && <p className="text-[10px] text-green-600 font-bold mr-2 mt-1">تم تفعيل الخصم بنجاح! 🎉</p>}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={promoCode}
+                            onChange={(e) => setPromoCode(e.target.value)}
+                            placeholder="كود الخصم"
+                            className="flex-1 p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black uppercase text-center font-mono font-black transition-all placeholder:text-gray-300 shadow-sm"
+                          />
+                          <button onClick={verifyPromoCode} className="px-6 bg-black text-white rounded-2xl font-black text-xs hover:bg-gray-800 transition active:scale-95 shadow-lg shadow-black/10">تطبيق</button>
                         </div>
+                        {promoError && <p className="text-[10px] text-red-500 font-bold mr-2">{promoError}</p>}
+                        {appliedPromo && <p className="text-[10px] text-green-600 font-bold mr-2">تم تفعيل الخصم بنجاح! 🎉</p>}
                       </div>
+
 
                       {/* Summary Card */}
                       <div className="bg-gray-900 rounded-[32px] p-6 text-white shadow-2xl relative overflow-hidden group">
