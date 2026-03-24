@@ -827,7 +827,7 @@ export default function AdminDashboard() {
             إدارة المنتجات
           </button>
           <button onClick={() => { setActiveTab("orders"); fetchOrders(); }} className={`whitespace-nowrap flex-1 px-5 sm:px-8 py-3 rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center justify-center gap-2 ${activeTab === 'orders' ? 'bg-black text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-black'}`}>
-            📦 الطلبات
+            الطلبات
             {orders.filter(o => o.status === 'pending').length > 0 && (
               <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${activeTab === 'orders' ? 'bg-white text-black' : 'bg-red-500 text-white'}`}>
                 {orders.filter(o => o.status === 'pending').length}
