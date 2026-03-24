@@ -257,14 +257,33 @@ export default function StoreFront() {
     const storeName = settings.store_name || "Boutique";
     const safeTotal = Math.max(0, grandTotal);
 
-    let itemsText = cart.map(item => {
-      const colorText = item.selectedColor ? ` | اللون: ${item.selectedColor}` : "";
-      return `- ${item.name} | المقاس: ${item.selectedSize}${colorText} | الكمية: ${item.quantity}`;
-    }).join("%0A");
+    // Each item includes image URL so the owner can tap it and identify the exact product
+    let itemsText = cart.map((item, idx) => {
+      const colorText = item.selectedColor ? `%0A   اللون: ${item.selectedColor}` : "";
+      const priceText = `%0A   سعر القطعة: ${Number(item.price).toLocaleString()} د.ع`;
+      const imageText = item.displayImage ? `%0A   صورة المنتج: ${item.displayImage}` : "";
+      return `📦 طلب (${idx + 1}):%0A   المنتج: ${item.name}${colorText}%0A   المقاس: ${item.selectedSize}%0A   الكمية: ${item.quantity}${priceText}${imageText}`;
+    }).join("%0A%0A");
 
-    const nameText = customerName.trim() ? `الاسم: ${customerName.trim()}%0A` : "";
+    const nameText = customerName.trim() ? `👤 المشتري: ${customerName.trim()}%0A` : "";
 
-    const message = `مرحباً، أود الطلب من متجركم (${storeName})%0A${nameText}%0Aالطلبات:%0A${itemsText}%0A%0Aالمدينة: ${governorate}%0Aسعر التوصيل: ${deliveryFee.toLocaleString()} د.ع%0A${bundleDiscount > 0 ? `خصم العرض: -${bundleDiscount.toLocaleString()} د.ع%0A` : ""}${promoDiscount > 0 ? `خصم البرومو كود: -${promoDiscount.toLocaleString()} د.ع%0A` : ""}المجموع الكلي: ${safeTotal.toLocaleString()} د.ع%0A%0Aالرجاء الرد لتأكيد الطلب واستلام عنواني الكامل.`;
+    const summaryLines = [
+      `🚚 التوصيل إلى ${governorate}: ${deliveryFee.toLocaleString()} د.ع`,
+      bundleDiscount > 0 ? `🎁 خصم العرض: -${bundleDiscount.toLocaleString()} د.ع` : null,
+      promoDiscount  > 0 ? `🎫 خصم كود: -${promoDiscount.toLocaleString()} د.ع`   : null,
+      `💰 المجموع الكلي: ${safeTotal.toLocaleString()} د.ع`,
+    ].filter(Boolean).join("%0A");
+
+    const divider = "────────────────────";
+
+    const message =
+      `🛒 طلب جديد من متجر ${storeName}%0A` +
+      `${divider}%0A` +
+      `${nameText}` +
+      `%0A${itemsText}%0A%0A` +
+      `${divider}%0A` +
+      `${summaryLines}%0A%0A` +
+      `📍 سيتم إرسال العنوان بعد تأكيد الطلب.`;
 
     window.open(`https://wa.me/${settings.whatsapp_number}?text=${message}`, "_blank");
 
