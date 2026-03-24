@@ -26,6 +26,7 @@ export default function StoreFront() {
 
   // Cart & Checkout State
   const [cart, setCart] = useState([]);
+  const [customerName, setCustomerName] = useState("");
   const [governorate, setGovernorate] = useState("Kirkuk");
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState(null);
@@ -164,15 +165,17 @@ export default function StoreFront() {
       setActiveModalImage(selectedProduct.image_url);
     }
 
-    // NEW: If the current selected size is not available for this new color, clear it.
-    if (selectedSize) {
-      const colorSizes = (colorObj && typeof colorObj !== "string" && colorObj.sizes)
-        ? colorObj.sizes
-        : (selectedProduct.variants?.sizes || selectedProduct.variants || {});
+    // If the current selected size is not available for this new color, auto-select first valid one.
+    const sizeType = selectedProduct.variants?.size_type || 'ALPHA';
+    const template = SIZE_TEMPLATES[sizeType] || SIZE_TEMPLATES.ALPHA;
+    const colorSizes = (colorObj && typeof colorObj !== "string" && colorObj.sizes)
+      ? colorObj.sizes
+      : (selectedProduct.variants?.sizes || selectedProduct.variants || {});
 
-      if (colorSizes[selectedSize] === false) {
-        setSelectedSize("");
-      }
+    const currentSizeStillValid = selectedSize && colorSizes[selectedSize] !== false;
+    if (!currentSizeStillValid) {
+      const firstValid = template.find(s => colorSizes[s] !== false);
+      setSelectedSize(firstValid || "");
     }
   };
 
@@ -240,19 +243,22 @@ export default function StoreFront() {
 
   const handleWhatsAppCheckout = () => {
     const storeName = settings.store_name || "Boutique";
+    const safeTotal = Math.max(0, grandTotal);
 
     let itemsText = cart.map(item => {
       const colorText = item.selectedColor ? ` | اللون: ${item.selectedColor}` : "";
       return `- ${item.name} | المقاس: ${item.selectedSize}${colorText} | الكمية: ${item.quantity}`;
     }).join("%0A");
 
-    const message = `مرحباً، أود الطلب من متجركم (${storeName})%0A%0Aالطلبات:%0A${itemsText}%0A%0Aالمدينة: ${governorate}%0Aسعر التوصيل: ${deliveryFee.toLocaleString()} د.ع%0A${bundleDiscount > 0 ? `خصم العرض: -${bundleDiscount.toLocaleString()} د.ع%0A` : ""}${promoDiscount > 0 ? `خصم البرومو كود: -${promoDiscount.toLocaleString()} د.ع%0A` : ""}المجموع الكلي: ${Math.max(0, grandTotal).toLocaleString()} د.ع%0A%0Aالرجاء الرد لتأكيد الطلب واستلام عنواني الكامل.`;
+    const nameText = customerName.trim() ? `الاسم: ${customerName.trim()}%0A` : "";
+
+    const message = `مرحباً، أود الطلب من متجركم (${storeName})%0A${nameText}%0Aالطلبات:%0A${itemsText}%0A%0Aالمدينة: ${governorate}%0Aسعر التوصيل: ${deliveryFee.toLocaleString()} د.ع%0A${bundleDiscount > 0 ? `خصم العرض: -${bundleDiscount.toLocaleString()} د.ع%0A` : ""}${promoDiscount > 0 ? `خصم البرومو كود: -${promoDiscount.toLocaleString()} د.ع%0A` : ""}المجموع الكلي: ${safeTotal.toLocaleString()} د.ع%0A%0Aالرجاء الرد لتأكيد الطلب واستلام عنواني الكامل.`;
 
     window.open(`https://wa.me/${settings.whatsapp_number}?text=${message}`, "_blank");
 
-    // إفراغ السلة وإغلاق النافذة بعد ثانية واحدة لضمان انتقال الزبون للواتساب أولاً
     setTimeout(() => {
       setCart([]);
+      setCustomerName("");
       setCheckoutModalOpen(false);
     }, 1000);
   };
@@ -500,7 +506,9 @@ export default function StoreFront() {
                           const isLegacy = typeof colorObj === "string";
                           const cName = isLegacy ? colorObj : colorObj.name;
                           const cImage = isLegacy ? null : colorObj.image_url;
-                          const isSelected = selectedColor === colorObj || selectedColor === cName || selectedColor?.name === cName;
+                          // Use name-based comparison for reliability (avoids object reference issues)
+                          const selectedColorName = selectedColor ? (typeof selectedColor === "string" ? selectedColor : selectedColor.name) : null;
+                          const isSelected = selectedColorName === cName;
 
                           return (
                             <button
@@ -640,6 +648,8 @@ export default function StoreFront() {
                           <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">الاسم الكامل للزبون</label>
                           <input 
                             type="text" 
+                            value={customerName}
+                            onChange={e => setCustomerName(e.target.value)}
                             placeholder="أدخل اسمك الكامل"
                             className="w-full p-4 rounded-2xl border border-gray-100 bg-white outline-none focus:border-black transition-all font-bold placeholder:text-gray-300 shadow-sm"
                           />

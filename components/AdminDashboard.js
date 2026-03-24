@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Lock, LogOut, Plus, Trash2, Image as ImageIcon, Save, CheckCircle2, AlertCircle, Percent, Edit3, Settings, X, UploadCloud, Zap, Check, Phone } from "lucide-react";
 
 const ACCESS_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
-const SIZES = ["S", "M", "L", "XL", "XXL"]; // Still used for some global defaults
+// SIZE_TEMPLATES is the single source of truth for all size systems
 const SIZE_TEMPLATES = {
   ALPHA: { name: "ملابس (S, M, L...)", values: ["S", "M", "L", "XL", "XXL", "XXXL"] },
   PANTS: { name: "سراويل (28, 30, 32...)", values: ["28", "29", "30", "31", "32", "33", "34", "36", "38", "40"] },
@@ -570,7 +570,13 @@ export default function AdminDashboard() {
                       </div>
                       <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1">نظام المقاسات</label>
-                        <select required value={productForm.size_type} onChange={e => setProductForm({ ...productForm, size_type: e.target.value })} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black outline-none bg-white font-medium appearance-none shadow-sm transition-colors text-amber-900 border-amber-50">
+                        <select required value={productForm.size_type} onChange={e => {
+                          const newType = e.target.value;
+                          // Sync sizes to the new template — reset all to true
+                          const newSizes = {};
+                          SIZE_TEMPLATES[newType].values.forEach(s => { newSizes[s] = true; });
+                          setProductForm({ ...productForm, size_type: newType, sizes: newSizes });
+                        }} className="w-full p-3 rounded-xl border border-gray-200 focus:border-black outline-none bg-white font-medium appearance-none shadow-sm transition-colors text-amber-900 border-amber-50">
                           {Object.entries(SIZE_TEMPLATES).map(([key, obj]) => <option key={key} value={key}>{obj.name}</option>)}
                         </select>
                       </div>
@@ -808,7 +814,7 @@ export default function AdminDashboard() {
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-2">كلمة المرور</label>
+                      <label className="block text-xs font-bold text-gray-700 mb-2">كود الخصم</label>
                       <input required type="text" value={newPromo.code} onChange={e => setNewPromo({ ...newPromo, code: e.target.value })} className="w-full p-4 rounded-xl border border-gray-200 focus:border-black outline-none uppercase font-mono bg-gray-50 focus:bg-white transition shadow-inner" placeholder="الكود" />
                     </div>
                     <div>
@@ -989,7 +995,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-4">
                         <label className="flex-1 flex flex-col items-center justify-center p-6 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-black transition">
                           <UploadCloud className="w-6 h-6 text-gray-400 mb-2" />
-                          <span className="text-[10px] text-gray-400 font-bold">رفع كعار جديد</span>
+                          <span className="text-[10px] text-gray-400 font-bold">رفع شعار جديد</span>
                           <input type="file" className="hidden" accept="image/*" onChange={e => setLogoFile(e.target.files[0])} />
                         </label>
                         {(logoFile || settings.store_logo) && (
