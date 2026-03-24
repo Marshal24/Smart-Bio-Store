@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { ShoppingBag, Search, X, Plus, Minus, Trash2, MapPin, Percent, Check, MessageCircle, Filter, BadgeCheck } from 'lucide-react';
 
+// Sentinel object for the main product image (no specific color)
+const MAIN_IMAGE_OPTION = { name: '', _isMain: true };
+
 export default function StoreFront() {
   const [products, setProducts] = useState([]);
   const [settings, setSettings] = useState({
@@ -131,23 +134,11 @@ export default function StoreFront() {
     const firstAvailableSize = template.find(size => productSizes[size] !== false);
     setSelectedSize(firstAvailableSize || "");
     
-    // Auto-select first COLOR
     const colors = product.variants?.colors || [];
     if (colors.length > 0) {
-      const firstColor = colors[0];
-      setSelectedColor(firstColor);
-      
-      const isLegacy = typeof firstColor === "string";
-      const imageUrl = isLegacy ? null : firstColor.image_url;
-      setActiveModalImage(imageUrl || product.image_url);
-
-      // If we auto-selected a color, and it has its own size rules, re-check size
-      if (firstAvailableSize && firstColor && typeof firstColor !== "string" && firstColor.sizes) {
-         if (firstColor.sizes[firstAvailableSize] === false) {
-           const specificAvailableSize = template.find(size => firstColor.sizes[size] !== false);
-           setSelectedSize(specificAvailableSize || "");
-         }
-      }
+      // DEFAULT: select the main image option (no specific color) so the first image is always purchasable
+      setSelectedColor(MAIN_IMAGE_OPTION);
+      setActiveModalImage(product.image_url);
     } else {
       setSelectedColor(null);
       setActiveModalImage(product.image_url);
@@ -156,6 +147,22 @@ export default function StoreFront() {
 
   const handleColorSelection = (colorObj) => {
     setSelectedColor(colorObj);
+    
+    // If main image option selected, show main product image
+    if (colorObj === MAIN_IMAGE_OPTION || colorObj?._isMain) {
+      setActiveModalImage(selectedProduct.image_url);
+      // Reset size to first valid from global sizes
+      const sizeType = selectedProduct.variants?.size_type || 'ALPHA';
+      const template = (SIZE_TEMPLATES[sizeType] || SIZE_TEMPLATES.ALPHA).values;
+      const globalSizes = selectedProduct.variants?.sizes || selectedProduct.variants || {};
+      const currentValid = selectedSize && globalSizes[selectedSize] !== false;
+      if (!currentValid) {
+        const firstValid = template.find(s => globalSizes[s] !== false);
+        setSelectedSize(firstValid || "");
+      }
+      return;
+    }
+
     const isLegacy = typeof colorObj === "string";
     const imageUrl = isLegacy ? null : colorObj.image_url;
     if (imageUrl) {
@@ -182,10 +189,16 @@ export default function StoreFront() {
     if (!selectedSize) return;
 
     const productColors = selectedProduct.variants?.colors || [];
+    // Allow: no colors needed OR a specific color is chosen OR MAIN_IMAGE_OPTION is chosen
+    const isMainOption = selectedColor?._isMain;
     if (productColors.length > 0 && !selectedColor) return;
 
-    const colorName = selectedColor ? (typeof selectedColor === "string" ? selectedColor : selectedColor.name) : "";
-    const colorImage = selectedColor && typeof selectedColor !== "string" ? selectedColor.image_url : null;
+    const colorName = (isMainOption || !selectedColor)
+      ? ""
+      : (typeof selectedColor === "string" ? selectedColor : selectedColor.name);
+    const colorImage = (!isMainOption && selectedColor && typeof selectedColor !== "string")
+      ? selectedColor.image_url
+      : null;
     const itemImage = colorImage || selectedProduct.image_url;
 
     const existingIndex = cart.findIndex(
@@ -496,17 +509,34 @@ export default function StoreFront() {
                     </p>
                   </div>
 
-                  {/* Step 1: Color Selection (if applicable) */}
+                  {/* Step 1: اختيار اللون */}
                   {(selectedProduct.variants?.colors || []).length > 0 && (
                     <div className="mb-8 bg-gray-50/50 rounded-3xl border border-gray-100 p-5">
                       <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2 tracking-wide">الخطوة 1: تحديد اللون <span className="text-[10px] bg-white px-2 py-1 rounded-md text-gray-500 font-bold border border-gray-200 shadow-sm ml-auto">الصورة تتغير حسب اختيارك</span></h3>
                       <div className="flex flex-wrap gap-2.5">
+
+                        {/* MAIN IMAGE option — always first */}
+                        {selectedProduct.image_url && (() => {
+                          const isMainSelected = selectedColor?._isMain;
+                          return (
+                            <button
+                              onClick={() => handleColorSelection(MAIN_IMAGE_OPTION)}
+                              className={`flex items-center gap-2 p-1.5 pr-4 min-h-[48px] border-2 rounded-2xl font-bold transition-all active:scale-95
+                                ${isMainSelected ? "text-white shadow-lg scale-105" : "border-gray-200 bg-white hover:border-black text-black"}`}
+                              style={isMainSelected ? { ...((settings.primary_color && settings.primary_color !== '#000000') ? { backgroundColor: settings.primary_color, borderColor: settings.primary_color } : { backgroundColor: '#000', borderColor: '#000' }) } : {}}
+                            >
+                              <img src={selectedProduct.image_url} className="w-8 h-8 rounded-xl object-cover border border-white/20 shadow-sm" alt="" />
+                              <span className="text-sm">الأصل</span>
+                            </button>
+                          );
+                        })()}
+
+                        {/* Color variant options */}
                         {selectedProduct.variants.colors.map((colorObj, idx) => {
                           const isLegacy = typeof colorObj === "string";
                           const cName = isLegacy ? colorObj : colorObj.name;
                           const cImage = isLegacy ? null : colorObj.image_url;
-                          // Use name-based comparison for reliability (avoids object reference issues)
-                          const selectedColorName = selectedColor ? (typeof selectedColor === "string" ? selectedColor : selectedColor.name) : null;
+                          const selectedColorName = selectedColor?._isMain ? '__main__' : (selectedColor ? (typeof selectedColor === "string" ? selectedColor : selectedColor.name) : null);
                           const isSelected = selectedColorName === cName;
 
                           return (
